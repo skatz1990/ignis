@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: skew-job-script
+  namespace: ignis-dev
+data:
+  skew_job.py: |
+    from pyspark.sql import SparkSession
+
+    spark = SparkSession.builder.appName("ignis-skew-test").getOrCreate()
+    spark.sparkContext.setLogLevel("WARN")
+
+    n = 500_000
+    data = [(0 if i < int(n * 0.95) else (i % 9) + 1, i) for i in range(n)]
+    df = spark.createDataFrame(data, ["key", "value"])
+    df.groupBy("key").count().show()
+
+    spark.stop()

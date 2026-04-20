@@ -3,13 +3,11 @@ JOB     := ignis-skew-job
 NS      := ignis-dev
 LOG_DIR := /tmp/ignis-spark-logs
 
-.PHONY: build apply wait logs analyze clean run
-
-build:
-	docker build -t $(IMAGE) app/
+.PHONY: apply wait logs analyze clean run
 
 apply:
 	kubectl apply -f k8s/namespace.yaml
+	kubectl apply -f k8s/configmap.yaml
 	kubectl delete job $(JOB) -n $(NS) --ignore-not-found
 	kubectl apply -f k8s/spark-job.yaml
 
@@ -18,7 +16,7 @@ wait:
 
 logs:
 	@POD=$$(kubectl get pods -n $(NS) -l job-name=$(JOB) -o jsonpath='{.items[0].metadata.name}'); \
-	kubectl logs -f $$POD
+	kubectl logs -f -n $(NS) $$POD
 
 analyze:
 	@LOG=$$(ls -t $(LOG_DIR) | grep -v '\.inprogress' | head -1); \
