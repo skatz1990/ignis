@@ -30,3 +30,4 @@ htmlcov/
 # Spark event logs (don't commit real logs)
 *.eventlog
 *.log
+dev/output/

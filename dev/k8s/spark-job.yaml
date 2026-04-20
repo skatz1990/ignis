@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ignis-skew-job
+  namespace: ignis-dev
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      containers:
+        - name: spark
+          image: ignis-spark-app:latest
+          imagePullPolicy: Never
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              mkdir -p /mnt/spark-logs && \
+              /opt/spark/bin/spark-submit \
+                --master local[4] \
+                --conf spark.eventLog.enabled=true \
+                --conf spark.eventLog.dir=file:///mnt/spark-logs \
+                --conf spark.sql.shuffle.partitions=10 \
+                /app/skew_job.py
+          volumeMounts:
+            - name: spark-logs
+              mountPath: /mnt/spark-logs
+      volumes:
+        - name: spark-logs
+          hostPath:
+            path: /tmp/ignis-spark-logs
+            type: DirectoryOrCreate
+      restartPolicy: Never
