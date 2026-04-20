@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "spark-ignis"
+version = "0.1.0"
+description = "ESLint for Apache Spark jobs — analyze event logs, diagnose performance issues"
+requires-python = ">=3.10"
+dependencies = [
+    "typer>=0.12",
+    "rich>=13",
+    "fsspec>=2024.1",
+]
+
+[project.scripts]
+ignis = "ignis.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["ignis"]
