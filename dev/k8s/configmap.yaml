@@ -7,12 +7,25 @@ data:
   skew_job.py: |
     from pyspark.sql import SparkSession
 
-    spark = SparkSession.builder.appName("ignis-skew-test").getOrCreate()
+    spark = (SparkSession.builder
+        .appName("ignis-skew-test")
+        # Disable AQE so partition skew isn't hidden by coalescing/pre-aggregation.
+        .config("spark.sql.adaptive.enabled", "false")
+        # Disable broadcast join so both sides are shuffled (exposes key skew).
+        .config("spark.sql.autoBroadcastJoinThreshold", "-1")
+        .config("spark.sql.shuffle.partitions", "10")
+        .getOrCreate())
     spark.sparkContext.setLogLevel("WARN")
 
+    # 95% of rows carry key=0 — one reduce task gets ~85x more data than others.
     n = 500_000
-    data = [(0 if i < int(n * 0.95) else (i % 9) + 1, i) for i in range(n)]
-    df = spark.createDataFrame(data, ["key", "value"])
-    df.groupBy("key").count().show()
+    large = spark.createDataFrame(
+        [(0 if i < int(n * 0.95) else (i % 9) + 1, i) for i in range(n)],
+        ["key", "value"],
+    )
+    small = spark.createDataFrame([(i,) for i in range(10)], ["key"])
+
+    # Sort-merge join shuffles both sides by key; partition 0 receives 475k rows.
+    print(large.join(small, "key").count())
 
     spark.stop()

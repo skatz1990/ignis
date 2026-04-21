@@ -53,7 +53,8 @@ def _handle_task_end(event: dict, app: Application) -> None:
     task_info = event.get("Task Info", {})
     launch_time = task_info.get("Launch Time", 0)
     finish_time = task_info.get("Finish Time", 0)
-    duration_ms = task_info.get("Duration", finish_time - launch_time)
+    # Duration can be null in some Spark versions; fall back to wall-clock diff.
+    duration_ms = task_info.get("Duration") or (finish_time - launch_time)
 
     raw_metrics = event.get("Task Metrics")
     metrics = None
