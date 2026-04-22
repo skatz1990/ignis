@@ -1,8 +1,11 @@
+from enum import Enum
+
 import typer
 from rich.console import Console
 
 from ignis.parser.event_log import parse_event_log
-from ignis.reporter.terminal import render_findings
+from ignis.reporter import json_reporter
+from ignis.reporter import terminal as terminal_reporter
 from ignis.rules.partition import PartitionCountRule
 from ignis.rules.shuffle import ShuffleSizeRule
 from ignis.rules.skew import DataSkewRule
@@ -19,6 +22,11 @@ _err = Console(stderr=True)
 _RULES = [DataSkewRule(), ShuffleSizeRule(), SpillRule(), PartitionCountRule()]
 
 
+class OutputFormat(str, Enum):
+    terminal = "terminal"
+    json = "json"
+
+
 @app.callback()
 def _root() -> None:
     """ESLint for Apache Spark jobs — analyze event logs, diagnose performance issues."""
@@ -27,6 +35,9 @@ def _root() -> None:
 @app.command()
 def analyze(
     path: str = typer.Argument(..., help="Path to a Spark event log (local path or s3://)."),
+    output: OutputFormat = typer.Option(
+        OutputFormat.terminal, "--output", "-o", help="Output format."
+    ),
 ) -> None:
     """Analyze a Spark event log and report performance issues."""
     try:
@@ -36,7 +47,11 @@ def analyze(
         raise typer.Exit(1)
 
     findings = [f for rule in _RULES for f in rule.analyze(application)]
-    render_findings(findings, application.app_name)
+
+    if output == OutputFormat.json:
+        json_reporter.render_findings(findings, application.app_id, application.app_name)
+    else:
+        terminal_reporter.render_findings(findings, application.app_name)
 
     if findings:
         raise typer.Exit(1)
