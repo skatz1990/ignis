@@ -4,19 +4,23 @@ Living task list. Items within each section are roughly priority-ordered.
 
 ---
 
-## Rules (in priority order)
+## Rules
 
-- [ ] **Shuffle size** — flag stages where total shuffle write bytes across tasks exceeds a threshold (default: 1 GB). Data is already in `TaskMetrics.shuffle_write_bytes`. Named constant: `SHUFFLE_WRITE_THRESHOLD_BYTES = 1_073_741_824`.
+All four initial rules are implemented and on main:
+- [x] **Data skew** — `DataSkewRule`
+- [x] **Shuffle size** — `ShuffleSizeRule` (threshold: 1 GB)
+- [x] **Spill** — `SpillRule` (disk: any spill → WARNING; memory: ≥500 MB → INFO)
+- [x] **Partition count** — `PartitionCountRule` (under: <2× cores; over: >10k partitions)
 
-- [ ] **Spill** — flag stages where tasks spill to disk (`disk_spill_bytes > 0`). Report total spill per stage and the worst offending task. Threshold: `DISK_SPILL_THRESHOLD_BYTES = 0` (any spill is worth flagging). Memory spill (`memory_spill_bytes`) is lower severity — warn only if large.
+### Future rules
 
-- [ ] **Partition count** — flag jobs with too few partitions (under-parallelism) or too many (scheduling overhead). Heuristic: fewer than 2× executor cores is too few; more than 10,000 is too many. Requires reading executor count from `SparkListenerExecutorAdded` events.
+- [ ] **Failed tasks / speculation** — flag stages with high task failure or speculation rates.
+- [ ] **Executor memory pressure** — flag high JVM GC time as a fraction of executor run time.
 
 ---
 
 ## Parser
 
-- [ ] Parse `SparkListenerExecutorAdded` to capture executor count and core count — needed by the partition count rule and useful for future rules.
 - [ ] Parse stage parent IDs (`Parent IDs` in Stage Info) to reconstruct the stage DAG — enables rules that reason about multi-stage pipelines.
 
 ---
