@@ -37,7 +37,12 @@ def _dispatch(event: dict, app: Application) -> None:
             stage_id=key[0],
             stage_attempt_id=key[1],
             name=info.get("Stage Name", ""),
+            num_tasks=info.get("Number of Tasks", 0),
         )
+
+    elif event_type == "SparkListenerExecutorAdded":
+        cores = event.get("Executor Info", {}).get("Total Cores", 0)
+        app.executor_cores += cores
 
     elif event_type == "SparkListenerTaskEnd":
         _handle_task_end(event, app)

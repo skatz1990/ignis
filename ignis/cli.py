@@ -3,6 +3,7 @@ from rich.console import Console
 
 from ignis.parser.event_log import parse_event_log
 from ignis.reporter.terminal import render_findings
+from ignis.rules.partition import PartitionCountRule
 from ignis.rules.shuffle import ShuffleSizeRule
 from ignis.rules.skew import DataSkewRule
 from ignis.rules.spill import SpillRule
@@ -15,7 +16,7 @@ app = typer.Typer(
 
 _err = Console(stderr=True)
 
-_RULES = [DataSkewRule(), ShuffleSizeRule(), SpillRule()]
+_RULES = [DataSkewRule(), ShuffleSizeRule(), SpillRule(), PartitionCountRule()]
 
 
 @app.callback()

@@ -25,6 +25,7 @@ class Stage:
     stage_id: int
     stage_attempt_id: int
     name: str
+    num_tasks: int = 0  # Configured partition count from Stage Info
     tasks: list[Task] = field(default_factory=list)
 
     @property
@@ -37,3 +38,4 @@ class Application:
     app_id: str
     app_name: str
     stages: dict[tuple[int, int], Stage] = field(default_factory=dict)
+    executor_cores: int = 0  # Total cores across all executors
