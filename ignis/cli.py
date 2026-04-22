@@ -3,6 +3,7 @@ from rich.console import Console
 
 from ignis.parser.event_log import parse_event_log
 from ignis.reporter.terminal import render_findings
+from ignis.rules.shuffle import ShuffleSizeRule
 from ignis.rules.skew import DataSkewRule
 
 app = typer.Typer(
@@ -13,7 +14,7 @@ app = typer.Typer(
 
 _err = Console(stderr=True)
 
-_RULES = [DataSkewRule()]
+_RULES = [DataSkewRule(), ShuffleSizeRule()]
 
 
 @app.callback()
