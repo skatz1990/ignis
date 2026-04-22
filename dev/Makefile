@@ -1,9 +1,10 @@
 SKEW_JOB    := ignis-skew-job
 SHUFFLE_JOB := ignis-shuffle-job
+SPILL_JOB   := ignis-spill-job
 NS          := ignis-dev
 LOG_DIR     := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))/output
 
-.PHONY: apply fetch logs analyze clean run apply-shuffle fetch-shuffle run-shuffle
+.PHONY: apply fetch logs analyze clean run apply-shuffle fetch-shuffle run-shuffle apply-spill fetch-spill run-spill
 
 # ── skew job ────────────────────────────────────────────────────────────────
 
@@ -30,6 +31,7 @@ analyze:
 clean:
 	kubectl delete job $(SKEW_JOB) -n $(NS) --ignore-not-found
 	kubectl delete job $(SHUFFLE_JOB) -n $(NS) --ignore-not-found
+	kubectl delete job $(SPILL_JOB) -n $(NS) --ignore-not-found
 	rm -rf $(LOG_DIR)
 
 run: apply fetch analyze
@@ -48,6 +50,21 @@ fetch-shuffle:
 	@$(call wait-and-fetch,$(SHUFFLE_JOB))
 
 run-shuffle: apply-shuffle fetch-shuffle analyze
+
+# ── spill job ────────────────────────────────────────────────────────────────
+
+apply-spill:
+	rm -rf $(LOG_DIR)
+	kubectl apply -f k8s/namespace.yaml
+	kubectl apply -f k8s/spill-configmap.yaml
+	kubectl delete job $(SPILL_JOB) -n $(NS) --ignore-not-found
+	kubectl apply -f k8s/spill-job.yaml
+
+fetch-spill:
+	@mkdir -p $(LOG_DIR)
+	@$(call wait-and-fetch,$(SPILL_JOB))
+
+run-spill: apply-spill fetch-spill analyze
 
 # ── shared fetch logic ───────────────────────────────────────────────────────
 
