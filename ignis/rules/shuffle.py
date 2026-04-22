@@ -1,6 +1,6 @@
 from ignis.parser.models import Application
 
-from .base import Finding, Rule, Severity
+from .base import Finding, Rule, RuleInfo, Severity
 
 SHUFFLE_WRITE_THRESHOLD_BYTES = 1_073_741_824  # 1 GB
 
@@ -36,3 +36,12 @@ class ShuffleSizeRule(Rule):
                 )
             )
         return findings
+
+    def describe(self) -> RuleInfo:
+        threshold_gb = SHUFFLE_WRITE_THRESHOLD_BYTES / 1_073_741_824
+        return RuleInfo(
+            id="shuffle-size",
+            description="A stage writes an excessive amount of data to shuffle files",
+            severity="WARNING",
+            threshold=f"total shuffle write ≥ {threshold_gb:.0f} GB",
+        )

@@ -1,6 +1,6 @@
 from ignis.parser.models import Application
 
-from .base import Finding, Rule, Severity
+from .base import Finding, Rule, RuleInfo, Severity
 
 # Fewer than 2x executor cores leaves half the cluster idle on average.
 MIN_TASKS_PER_CORE = 2
@@ -63,3 +63,13 @@ class PartitionCountRule(Rule):
                     )
                 )
         return findings
+
+    def describe(self) -> RuleInfo:
+        return RuleInfo(
+            id="partition-count",
+            description="Shuffle partition count leaves the cluster idle or overwhelms the driver",
+            severity="WARNING",
+            threshold=(
+                f"< {MIN_TASKS_PER_CORE}× executor cores or > {MAX_PARTITION_COUNT:,} partitions"
+            ),
+        )

@@ -2,7 +2,7 @@ import statistics
 
 from ignis.parser.models import Application
 
-from .base import Finding, Rule, Severity
+from .base import Finding, Rule, RuleInfo, Severity
 
 SKEW_RATIO_THRESHOLD = 5.0
 MIN_TASKS_FOR_ANALYSIS = 3
@@ -43,3 +43,11 @@ class DataSkewRule(Rule):
                     )
                 )
         return findings
+
+    def describe(self) -> RuleInfo:
+        return RuleInfo(
+            id="data-skew",
+            description="One task takes far longer than its peers in a shuffle stage",
+            severity="WARNING",
+            threshold=f"max task ≥ {SKEW_RATIO_THRESHOLD}× median task duration",
+        )
