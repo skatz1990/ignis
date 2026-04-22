@@ -4,12 +4,6 @@ Living task list. Items within each section are roughly priority-ordered.
 
 ---
 
-## Bugs / Regression gaps
-
-- [ ] Add a `tests/fixtures/duration_null.ndjson` fixture where `Duration` is explicitly `null` in Task Info, and a corresponding test that verifies the fallback to `Finish Time - Launch Time`. Caught by the real Spark 3.5 run — not covered by the hand-crafted fixture today.
-
----
-
 ## Rules (in priority order)
 
 - [ ] **Shuffle size** — flag stages where total shuffle write bytes across tasks exceeds a threshold (default: 1 GB). Data is already in `TaskMetrics.shuffle_write_bytes`. Named constant: `SHUFFLE_WRITE_THRESHOLD_BYTES = 1_073_741_824`.
@@ -39,7 +33,6 @@ Living task list. Items within each section are roughly priority-ordered.
 ## Distribution
 
 - [ ] Publish to PyPI as `spark-ignis`. Requires `__version__` bump, changelog, and `python -m build` + `twine upload` workflow.
-- [ ] GitHub Actions CI — run `pytest` on push, gate PRs.
 
 ---
 
@@ -52,6 +45,5 @@ Living task list. Items within each section are roughly priority-ordered.
 
 ## Dev / Testing infrastructure
 
-- [ ] Add `Duration=null` fixture (see Bugs section above).
 - [ ] Integration test that runs the K8s job and asserts ignis finds the skew finding — currently `make run` is manual.
 - [ ] Consider `pytest-snapshot` for reporter output to catch formatting regressions.
