@@ -18,20 +18,25 @@ fetch:
 	@POD=$$(kubectl get pods -n $(NS) -l job-name=$(JOB) -o jsonpath='{.items[0].metadata.name}'); \
 	echo "Pod: $$POD"; \
 	kubectl wait --for=condition=ready pod/$$POD -n $(NS) --timeout=120s; \
-	echo "Waiting for Spark to finish writing event log..."; \
-	until kubectl exec -n $(NS) $$POD -- sh -c "ls /mnt/spark-logs/ | grep -qv '\.inprogress'" 2>/dev/null; do sleep 2; done; \
+	echo "Waiting for Spark to finish (SPARK_DONE)..."; \
+	until kubectl logs -n $(NS) $$POD 2>/dev/null | grep -q "SPARK_DONE"; do sleep 2; done; \
 	echo "Copying log..."; \
 	kubectl cp $(NS)/$$POD:/mnt/spark-logs/. $(LOG_DIR)/; \
-	kubectl delete job $(JOB) -n $(NS) --ignore-not-found
+	kubectl delete job $(JOB) -n $(NS) --ignore-not-found; \
+	for zst in $(LOG_DIR)/eventlog_v2_*/events_*.zstd; do \
+		[ -f "$$zst" ] || continue; \
+		name=$$(basename $$(dirname $$zst) | sed 's/eventlog_v2_//'); \
+		zstd -d -c "$$zst" > "$(LOG_DIR)/$$name" && echo "Decompressed: $(LOG_DIR)/$$name"; \
+	done
 
 logs:
 	@POD=$$(kubectl get pods -n $(NS) -l job-name=$(JOB) -o jsonpath='{.items[0].metadata.name}'); \
 	kubectl logs -f -n $(NS) $$POD
 
 analyze:
-	@LOG=$$(ls -t $(LOG_DIR) | grep -v '\.inprogress' | head -1); \
+	@LOG=$$(ls -t $(LOG_DIR) | grep -v '\.inprogress' | grep -v 'eventlog_v2_' | head -1); \
 	echo "→ analyzing $(LOG_DIR)/$$LOG"; \
-	cd .. && .venv/bin/ignis analyze $(LOG_DIR)/$$LOG
+	cd .. && .venv/bin/ignis analyze "$(LOG_DIR)/$$LOG"
 
 clean:
 	kubectl delete job $(JOB) -n $(NS) --ignore-not-found
