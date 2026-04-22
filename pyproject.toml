@@ -19,7 +19,18 @@ ignis = "ignis.cli:main"
 [project.optional-dependencies]
 dev = [
     "pytest>=8",
+    "ruff>=0.4",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["ignis"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -65,8 +65,7 @@ def _handle_task_end(event: dict, app: Application) -> None:
             duration_ms=duration_ms,
             executor_run_time_ms=raw_metrics.get("Executor Run Time", 0),
             shuffle_read_bytes=(
-                shuffle_read.get("Remote Bytes Read", 0)
-                + shuffle_read.get("Local Bytes Read", 0)
+                shuffle_read.get("Remote Bytes Read", 0) + shuffle_read.get("Local Bytes Read", 0)
             ),
             shuffle_write_bytes=shuffle_write.get("Shuffle Bytes Written", 0),
             memory_spill_bytes=raw_metrics.get("Memory Bytes Spilled", 0),
