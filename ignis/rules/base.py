@@ -21,6 +21,17 @@ class Finding:
     recommendation: str
 
 
+@dataclass
+class RuleInfo:
+    id: str
+    description: str
+    severity: str  # human-readable, e.g. "WARNING" or "WARNING / INFO"
+    threshold: str
+
+
 class Rule(ABC):
     @abstractmethod
     def analyze(self, app: Application) -> list[Finding]: ...
+
+    @abstractmethod
+    def describe(self) -> RuleInfo: ...

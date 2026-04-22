@@ -1,6 +1,6 @@
 from ignis.parser.models import Application
 
-from .base import Finding, Rule, Severity
+from .base import Finding, Rule, RuleInfo, Severity
 
 # Any disk spill is worth flagging — disk I/O is 10-100x slower than memory.
 DISK_SPILL_THRESHOLD_BYTES = 0
@@ -73,3 +73,12 @@ class SpillRule(Rule):
                 )
 
         return findings
+
+    def describe(self) -> RuleInfo:
+        mem_mb = MEMORY_SPILL_THRESHOLD_BYTES // 1_048_576
+        return RuleInfo(
+            id="spill",
+            description="Tasks spill execution data to disk or show significant memory pressure",
+            severity="WARNING / INFO",
+            threshold=f"any disk spill (WARNING); memory spill ≥ {mem_mb} MB (INFO)",
+        )

@@ -34,7 +34,7 @@ Ignis parses these logs and applies rules to the collected metrics.
 
 ## Rule: Data Skew
 
-**Implemented in** `ignis/rules/skew.py`
+**ID:** `data-skew` | **Implemented in** `ignis/rules/skew.py`
 
 ### What it is
 
@@ -73,7 +73,7 @@ With only 1 or 2 tasks, the ratio is meaningless — there's no meaningful "norm
 
 ## Rule: Shuffle Size
 
-**Implemented in** `ignis/rules/shuffle.py`
+**ID:** `shuffle-size` | **Implemented in** `ignis/rules/shuffle.py`
 
 ### What it is
 
@@ -107,31 +107,41 @@ Spark's query optimizer can project away columns that aren't needed by downstrea
 
 ---
 
-## Rule: Spill *(coming soon)*
+## Rule: Spill
+
+**ID:** `spill` | **Implemented in** `ignis/rules/spill.py`
 
 ### What it is
 
 Memory spill occurs when Spark's execution memory is exhausted during a shuffle or sort. Rather than fail, Spark writes intermediate data to local disk as a temporary measure. When the operation resumes, it reads that data back from disk.
 
 There are two types:
-- **Memory spill** (`Memory Bytes Spilled`): data serialized in memory before being written to disk. A leading indicator of memory pressure.
 - **Disk spill** (`Disk Bytes Spilled`): data physically written to disk. This is the expensive one.
+- **Memory spill** (`Memory Bytes Spilled`): data serialized in memory before being written to disk. A leading indicator of memory pressure.
 
 ### Why it matters
 
 Local disk I/O is typically 10–100× slower than in-memory operations. Even a modest amount of disk spill can dramatically extend stage runtime — and the cause isn't always obvious from wall-clock time alone. A stage that "should" take 30 seconds can take 10 minutes if executors are repeatedly spilling and re-reading hundreds of MB per task.
 
-### How ignis will detect it
+### How ignis detects it
 
-For each stage, ignis will check `disk_spill_bytes` per task. **Any non-zero disk spill** triggers a WARNING — there is no minimum threshold, because disk spill is always a sign that executor memory is undersized relative to the data being processed. Memory spill above a separate threshold will trigger an INFO finding as an early warning.
+For each stage with at least one successful task:
+
+- **Any non-zero disk spill** across tasks → WARNING. There is no minimum threshold because disk spill is always a sign that executor memory is undersized relative to the data being processed. The finding reports the worst offending task and the total spill across the stage.
+- **Total memory spill ≥ `MEMORY_SPILL_THRESHOLD_BYTES`** (default: **500 MB**) → INFO. Memory spill alone is a leading indicator — data hasn't hit disk yet but the executor is under pressure.
+
+**Recommendation**
+Increase `--executor-memory` or `--driver-memory`, or reduce the shuffle partition size so each task handles less data at once.
 
 ---
 
-## Rule: Partition Count *(coming soon)*
+## Rule: Partition Count
+
+**ID:** `partition-count` | **Implemented in** `ignis/rules/partition.py`
 
 ### What it is
 
-The number of partitions in a shuffle stage determines how many parallel reduce tasks Spark creates. Too few and the cluster is under-utilized; too many and the overhead of scheduling, serializing, and coordinating thousands of tiny tasks slows the job down.
+The number of partitions in a shuffle stage determines how many parallel reduce tasks Spark creates. This is controlled by `spark.sql.shuffle.partitions` (default: 200). Too few and the cluster is under-utilized; too many and the overhead of scheduling, serializing, and coordinating thousands of tiny tasks slows the job down.
 
 ### Why it matters
 
@@ -143,9 +153,11 @@ Each task carries overhead: scheduling on the driver, JVM thread startup, result
 
 A healthy partition count for a shuffle stage is typically **2–4× the total number of executor cores** available to the job.
 
-### How ignis will detect it
+### How ignis detects it
 
-Ignis will parse `SparkListenerExecutorAdded` events to determine total available executor cores, then compare the shuffle partition count for each stage:
+Ignis parses `SparkListenerExecutorAdded` events to determine total available executor cores, then checks each shuffle-read stage (stages that consume shuffle output — reduce and join stages, not map stages):
 
-- Fewer than `2 × total_cores` → WARNING (under-parallelism)
-- More than `10,000` → WARNING (scheduling overhead)
+- **`num_tasks < 2 × total_cores`** → WARNING (under-parallelism). Recommendation: raise `spark.sql.shuffle.partitions` to at least `2 × total_cores`.
+- **`num_tasks > 10,000`** → WARNING (scheduling overhead). Recommendation: lower `spark.sql.shuffle.partitions`; a good starting point is 2–4× your executor core count.
+
+`num_tasks` is taken from the `Number of Tasks` field in `SparkListenerStageSubmitted`, which reflects the configured partition count — not the number of task events in the log.

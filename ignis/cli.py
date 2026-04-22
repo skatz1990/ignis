@@ -1,7 +1,9 @@
 from enum import Enum
 
 import typer
+from rich import box
 from rich.console import Console
+from rich.table import Table
 
 from ignis.parser.event_log import parse_event_log
 from ignis.reporter import json_reporter
@@ -55,6 +57,23 @@ def analyze(
 
     if findings:
         raise typer.Exit(1)
+
+
+@app.command()
+def rules() -> None:
+    """List all available rules with their severity and trigger threshold."""
+    console = Console()
+    table = Table(box=box.SIMPLE_HEAD, show_header=True, header_style="bold", expand=False)
+    table.add_column("Rule", style="bold")
+    table.add_column("Severity", width=14)
+    table.add_column("Threshold")
+    table.add_column("Description")
+
+    for rule in _RULES:
+        info = rule.describe()
+        table.add_row(info.id, info.severity, info.threshold, info.description)
+
+    console.print(table)
 
 
 def main() -> None:
