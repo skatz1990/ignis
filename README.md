@@ -7,43 +7,87 @@ $ ignis analyze /path/to/spark-event-log
 
 ──────────────────── ignis  my-spark-app ────────────────────
 
-1 issue(s) found
+2 issue(s) found
 
-  Severity   Rule        Stage  Message
+  Severity   Rule              Stage  Message
  ────────────────────────────────────────────────────────────
-  WARNING    data-skew       2  Stage 2 ('groupBy at job.py:42'):
-                                max task 42,300ms vs median 1,800ms (23.5x ratio)
+  WARNING    data-skew             2  Stage 2 ('groupBy at job.py:42'):
+                                      max task 42,300ms vs median 1,800ms (23.5x ratio)
+  WARNING    partition-count       3  Stage 3 ('join at job.py:71'):
+                                      2 shuffle partition(s) across 8 executor core(s)
+                                      — cluster is under-utilized
 
 ╭───────────────────── data-skew — Stage 2 ──────────────────╮
 │ Repartition before the shuffle with a higher partition     │
 │ count, or salt the join/groupBy key to spread work across  │
 │ more tasks.                                                │
 ╰────────────────────────────────────────────────────────────╯
+╭─────────────────── partition-count — Stage 3 ──────────────╮
+│ Raise spark.sql.shuffle.partitions to at least 16          │
+│ (2× your 8 executor cores).                                │
+╰────────────────────────────────────────────────────────────╯
 ```
 
 ## Installation
 
+Not yet on PyPI. Install from source:
+
 ```bash
-pip install spark-ignis
+git clone https://github.com/skatz1990/ignis
+cd ignis
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e .
 ```
 
 ## Usage
 
 ```bash
-ignis analyze <path-to-event-log>
+# Analyze a local event log (terminal output, exits 1 if issues found)
+ignis analyze /path/to/spark-event-log
+
+# Machine-readable JSON output — pipe to jq, store in CI artifacts
+ignis analyze /path/to/spark-event-log --output json
+
+# List all rules with their thresholds
+ignis rules
 ```
 
-Exits `0` if no issues are found, `1` if any are.
+Exits `0` if no issues are found, `1` if any are — in both terminal and JSON modes.
 
-Spark event logs are standard NDJSON files. Databricks writes them to DBFS or cloud storage after each job; download one locally or point directly at the path once S3 support lands.
+Spark event logs are standard NDJSON files (Spark 3.x) or zstd-compressed directories (Spark 4.0+). Databricks writes them to DBFS or cloud storage after each job.
 
 ## Rules
 
-| Rule | Trigger | Default threshold |
+| Rule | What it detects | Default threshold |
 |---|---|---|
-| `data-skew` | Max task duration / median task duration within a stage | ≥ 5× |
+| `data-skew` | One task takes far longer than its peers in a shuffle stage | max ≥ 5× median task duration |
+| `shuffle-size` | A stage writes an excessive amount of data to shuffle files | total shuffle write ≥ 1 GB |
+| `spill` | Tasks spill execution data to disk or show significant memory pressure | any disk spill (WARNING); memory spill ≥ 500 MB (INFO) |
+| `partition-count` | Shuffle partition count leaves the cluster idle or overwhelms the driver | < 2× executor cores or > 10,000 partitions |
 
-More rules coming: shuffle size, spill, partition count.
+Run `ignis rules` for a live summary with thresholds.
+
+## JSON output
+
+`--output json` emits a structured document to stdout:
+
+```json
+{
+  "app_id": "application_1234_0001",
+  "app_name": "my-spark-app",
+  "finding_count": 1,
+  "findings": [
+    {
+      "rule": "data-skew",
+      "severity": "warning",
+      "stage_id": 2,
+      "stage_name": "groupBy at job.py:42",
+      "message": "Stage 2 ('groupBy at job.py:42'): max task 42,300ms vs median 1,800ms (23.5x ratio)",
+      "recommendation": "Repartition before the shuffle with a higher partition count, or salt the join/groupBy key to spread work across more tasks."
+    }
+  ]
+}
+```
 
 ## Development
 
@@ -61,8 +105,10 @@ pytest
 ignis/
   parser/     NDJSON event log parsing → Application/Stage/Task models
   rules/      Diagnostic rules (one module per rule)
-  reporter/   Rich terminal output
-  cli.py      Entry point — ignis analyze <path>
+  reporter/   Terminal (rich) and JSON output
+  cli.py      Entry point — ignis analyze <path>, ignis rules
 tests/
   fixtures/   Hand-crafted NDJSON snippets that trigger each rule
+docs/
+  rules.md    Detailed explanation of each rule and its detection logic
 ```
