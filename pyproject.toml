@@ -30,6 +30,12 @@ dev = [
     "pytest>=8",
     "ruff>=0.4",
 ]
+integration = [
+    "testcontainers[minio]>=4.0",
+    "s3fs>=2024.1",
+    "gcsfs>=2024.1",
+    "adlfs>=2024.1",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["ignis"]
@@ -43,3 +49,6 @@ select = ["E", "F", "W", "I"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "integration: real-cloud tests, skipped unless env vars are set",
+]
