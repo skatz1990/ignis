@@ -31,3 +31,6 @@ htmlcov/
 *.eventlog
 *.log
 dev/output/
+
+# Claude Code internal memory
+memory/
