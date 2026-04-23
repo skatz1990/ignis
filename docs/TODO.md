@@ -30,13 +30,13 @@ All four initial rules are implemented and on main:
 - [x] `--output json` flag — emits `{app_id, app_name, finding_count, findings[]}` to stdout.
 - [x] `ignis rules` command — lists all rules with severity and threshold.
 - [ ] `--output html` flag — self-contained HTML report with charts.
-- [ ] `--threshold` overrides — e.g. `--skew-ratio 3.0` to tighten the default.
+- [x] `--threshold` overrides — `--skew-ratio`, `--shuffle-gb`, `--spill-memory-mb`, `--min-tasks-per-core`, `--max-partitions`.
 
 ---
 
 ## Distribution
 
-- [ ] Publish to PyPI as `spark-ignis`. Requires `__version__` bump, changelog, and `python -m build` + `twine upload` workflow.
+- [x] Publish to PyPI as `spark-ignis` — versioned via git tags (`hatch-vcs`), published via GitHub Actions trusted publishing on every `v*` tag push.
 
 ---
 
@@ -45,7 +45,7 @@ All four initial rules are implemented and on main:
 - [x] S3 support — `pip install spark-ignis[s3]` installs `s3fs`; credentials via standard AWS chain. Tested with in-memory fsspec mock.
 - [x] GCS support — `pip install spark-ignis[gcs]` installs `gcsfs`; credentials via standard GCP chain.
 - [x] Azure ADLS Gen2 support — `pip install spark-ignis[azure]` installs `adlfs`; credentials via standard Azure chain.
-- [ ] Cloud integration tests — optional `@pytest.mark.integration` suite that runs against real buckets when credentials are present. Currently all cloud tests use an in-memory fsspec mock.
+- [x] Cloud integration tests — Docker-based suite using MinIO, fake-gcs-server, and Azurite via testcontainers. Runs in CI on every PR.
 - [ ] Compressed logs — Spark can gzip event logs (`spark.eventLog.compress=true`). `fsspec` handles `.gz` transparently; verify and add a test fixture.
 
 ---
