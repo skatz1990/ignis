@@ -4,7 +4,7 @@ from ignis.parser.event_log import parse_event_log
 from ignis.rules.base import Severity
 from ignis.rules.spill import MEMORY_SPILL_THRESHOLD_BYTES, SpillRule
 
-FIXTURE = str(pathlib.Path(__file__).parent / "fixtures" / "spill_example.ndjson")
+FIXTURE = str(pathlib.Path(__file__).parent.parent / "fixtures" / "spill_example.ndjson")
 
 # Stage 0 disk spill: 209_715_200 + 157_286_400 + 52_428_800 = 419_430_400 bytes (400 MB)
 # Stage 0 worst task: Task 0 at 209_715_200 bytes (200 MB)

@@ -4,7 +4,7 @@ from ignis.parser.event_log import parse_event_log
 from ignis.rules.base import Severity
 from ignis.rules.partition import MAX_PARTITION_COUNT, MIN_TASKS_PER_CORE, PartitionCountRule
 
-FIXTURE = str(pathlib.Path(__file__).parent / "fixtures" / "partition_example.ndjson")
+FIXTURE = str(pathlib.Path(__file__).parent.parent / "fixtures" / "partition_example.ndjson")
 
 # Fixture layout:
 #   Stage 0 (map, no shuffle read)        → skipped

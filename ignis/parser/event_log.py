@@ -11,8 +11,7 @@ def parse_event_log(path: str) -> Application:
     try:
         ctx = fsspec.open(path, "rt", encoding="utf-8")
     except (ImportError, ValueError) as exc:
-        if path.startswith("s3://") and "s3" in str(exc).lower():
-            raise ImportError("S3 support requires s3fs: pip install 'spark-ignis[s3]'") from exc
+        _raise_if_missing_backend(path, exc)
         raise
 
     with ctx as f:
@@ -28,6 +27,22 @@ def parse_event_log(path: str) -> Application:
             _dispatch(event, app)
 
     return app
+
+
+_CLOUD_BACKENDS = [
+    ("s3://", "s3fs", "spark-ignis[s3]"),
+    ("gs://", "gcsfs", "spark-ignis[gcs]"),
+    ("abfs://", "adlfs", "spark-ignis[azure]"),
+    ("abfss://", "adlfs", "spark-ignis[azure]"),
+]
+
+
+def _raise_if_missing_backend(path: str, exc: Exception) -> None:
+    for prefix, package, extra in _CLOUD_BACKENDS:
+        if path.startswith(prefix):
+            raise ImportError(
+                f"{prefix[:-3].upper()} support requires {package}: pip install '{extra}'"
+            ) from exc
 
 
 def _dispatch(event: dict, app: Application) -> None:

@@ -36,8 +36,10 @@ Not yet on PyPI. Install from source:
 git clone https://github.com/skatz1990/ignis
 cd ignis
 python3 -m venv .venv && source .venv/bin/activate
-pip install -e .          # local files only
-pip install -e ".[s3]"    # + S3 support
+pip install -e .               # local files only
+pip install -e ".[s3]"         # + AWS S3
+pip install -e ".[gcs]"        # + Google Cloud Storage
+pip install -e ".[azure]"      # + Azure Data Lake Storage
 ```
 
 ## Usage
@@ -46,8 +48,10 @@ pip install -e ".[s3]"    # + S3 support
 # Analyze a local event log (terminal output, exits 1 if issues found)
 ignis analyze /path/to/spark-event-log
 
-# Analyze directly from S3
+# Analyze directly from cloud storage
 ignis analyze s3://my-bucket/spark-logs/application_1234_0001
+ignis analyze gs://my-bucket/spark-logs/application_1234_0001
+ignis analyze abfs://my-container/spark-logs/application_1234_0001
 
 # Machine-readable JSON output — pipe to jq, store in CI artifacts
 ignis analyze s3://my-bucket/spark-logs/application_1234_0001 --output json
@@ -58,27 +62,55 @@ ignis rules
 
 Exits `0` if no issues are found, `1` if any are — in both terminal and JSON modes.
 
-Spark event logs are standard NDJSON files (Spark 3.x) or zstd-compressed directories (Spark 4.0+). Databricks writes them to DBFS or S3 after each job.
+Spark event logs are standard NDJSON files (Spark 3.x) or zstd-compressed directories (Spark 4.0+). Databricks writes them to DBFS, S3, GCS, or ADLS after each job.
 
-## S3 support
+## Cloud storage
 
-Install the `[s3]` extra, then point ignis at any `s3://` path:
+### AWS S3
 
 ```bash
 pip install -e ".[s3]"
 ignis analyze s3://my-bucket/spark-logs/application_1234_0001
 ```
 
-Credentials are picked up automatically from the standard AWS credential chain:
+Credentials from the standard AWS chain:
 
 | Source | How |
 |---|---|
 | Environment variables | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` |
 | Named profile | `AWS_PROFILE=my-profile ignis analyze s3://...` |
 | Instance role (EC2/ECS) | No configuration needed |
-| SSO / credential file | `aws sso login` then run ignis normally |
+| SSO | `aws sso login` then run ignis normally |
 
-For cross-account access or custom endpoints, set `AWS_ENDPOINT_URL` before running ignis.
+### Google Cloud Storage
+
+```bash
+pip install -e ".[gcs]"
+ignis analyze gs://my-bucket/spark-logs/application_1234_0001
+```
+
+Credentials from the standard GCP chain:
+
+| Source | How |
+|---|---|
+| User credentials | `gcloud auth application-default login` |
+| Service account key | `GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json` |
+| Workload Identity (GKE) | No configuration needed |
+
+### Azure Data Lake Storage (ADLS Gen2)
+
+```bash
+pip install -e ".[azure]"
+ignis analyze abfs://my-container/spark-logs/application_1234_0001
+```
+
+Credentials from the standard Azure chain:
+
+| Source | How |
+|---|---|
+| Service principal | `AZURE_TENANT_ID` + `AZURE_CLIENT_ID` + `AZURE_CLIENT_SECRET` |
+| Azure CLI | `az login` then run ignis normally |
+| Managed identity | No configuration needed |
 
 ## Rules
 

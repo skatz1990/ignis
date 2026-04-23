@@ -20,6 +20,12 @@ ignis = "ignis.cli:main"
 s3 = [
     "s3fs>=2024.1",
 ]
+gcs = [
+    "gcsfs>=2024.1",
+]
+azure = [
+    "adlfs>=2024.1",
+]
 dev = [
     "pytest>=8",
     "ruff>=0.4",

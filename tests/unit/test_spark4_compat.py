@@ -5,7 +5,7 @@ import pathlib
 from ignis.parser.event_log import parse_event_log
 from ignis.rules.skew import SKEW_RATIO_THRESHOLD, DataSkewRule
 
-FIXTURE = str(pathlib.Path(__file__).parent / "fixtures" / "spark4_skew_example.ndjson")
+FIXTURE = str(pathlib.Path(__file__).parent.parent / "fixtures" / "spark4_skew_example.ndjson")
 
 
 def test_spark4_parser_loads_app_metadata():
