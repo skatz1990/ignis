@@ -17,6 +17,9 @@ dependencies = [
 ignis = "ignis.cli:main"
 
 [project.optional-dependencies]
+s3 = [
+    "s3fs>=2024.1",
+]
 dev = [
     "pytest>=8",
     "ruff>=0.4",
