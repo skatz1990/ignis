@@ -6,6 +6,9 @@ SHUFFLE_WRITE_THRESHOLD_BYTES = 1_073_741_824  # 1 GB
 
 
 class ShuffleSizeRule(Rule):
+    def __init__(self, threshold_bytes: int = SHUFFLE_WRITE_THRESHOLD_BYTES) -> None:
+        self.threshold_bytes = threshold_bytes
+
     def analyze(self, app: Application) -> list[Finding]:
         findings = []
         for stage in app.stages.values():
@@ -14,7 +17,7 @@ class ShuffleSizeRule(Rule):
                 continue
 
             total_bytes = sum(t.metrics.shuffle_write_bytes for t in successful)
-            if total_bytes < SHUFFLE_WRITE_THRESHOLD_BYTES:
+            if total_bytes < self.threshold_bytes:
                 continue
 
             total_gb = total_bytes / 1_073_741_824
@@ -38,7 +41,7 @@ class ShuffleSizeRule(Rule):
         return findings
 
     def describe(self) -> RuleInfo:
-        threshold_gb = SHUFFLE_WRITE_THRESHOLD_BYTES / 1_073_741_824
+        threshold_gb = self.threshold_bytes / 1_073_741_824
         return RuleInfo(
             id="shuffle-size",
             description="A stage writes an excessive amount of data to shuffle files",

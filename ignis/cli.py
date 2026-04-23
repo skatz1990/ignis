@@ -8,10 +8,10 @@ from rich.table import Table
 from ignis.parser.event_log import parse_event_log
 from ignis.reporter import json_reporter
 from ignis.reporter import terminal as terminal_reporter
-from ignis.rules.partition import PartitionCountRule
-from ignis.rules.shuffle import ShuffleSizeRule
-from ignis.rules.skew import DataSkewRule
-from ignis.rules.spill import SpillRule
+from ignis.rules.partition import MAX_PARTITION_COUNT, MIN_TASKS_PER_CORE, PartitionCountRule
+from ignis.rules.shuffle import SHUFFLE_WRITE_THRESHOLD_BYTES, ShuffleSizeRule
+from ignis.rules.skew import SKEW_RATIO_THRESHOLD, DataSkewRule
+from ignis.rules.spill import MEMORY_SPILL_THRESHOLD_BYTES, SpillRule
 
 app = typer.Typer(
     name="ignis",
@@ -21,7 +21,8 @@ app = typer.Typer(
 
 _err = Console(stderr=True)
 
-_RULES = [DataSkewRule(), ShuffleSizeRule(), SpillRule(), PartitionCountRule()]
+# Default rule instances — used by `ignis rules` to show default thresholds.
+_DEFAULT_RULES = [DataSkewRule(), ShuffleSizeRule(), SpillRule(), PartitionCountRule()]
 
 
 class OutputFormat(str, Enum):
@@ -40,6 +41,29 @@ def analyze(
     output: OutputFormat = typer.Option(
         OutputFormat.terminal, "--output", "-o", help="Output format."
     ),
+    skew_ratio: float = typer.Option(
+        SKEW_RATIO_THRESHOLD, "--skew-ratio", help="Max/median task duration ratio to flag as skew."
+    ),
+    shuffle_gb: float = typer.Option(
+        SHUFFLE_WRITE_THRESHOLD_BYTES / 1_073_741_824,
+        "--shuffle-gb",
+        help="Shuffle write threshold in GB.",
+    ),
+    spill_memory_mb: int = typer.Option(
+        MEMORY_SPILL_THRESHOLD_BYTES // 1_048_576,
+        "--spill-memory-mb",
+        help="Memory spill threshold in MB before firing an INFO finding.",
+    ),
+    min_tasks_per_core: int = typer.Option(
+        MIN_TASKS_PER_CORE,
+        "--min-tasks-per-core",
+        help="Minimum shuffle partitions per executor core before flagging under-parallelism.",
+    ),
+    max_partitions: int = typer.Option(
+        MAX_PARTITION_COUNT,
+        "--max-partitions",
+        help="Maximum shuffle partitions before flagging scheduling overhead.",
+    ),
 ) -> None:
     """Analyze a Spark event log and report performance issues."""
     try:
@@ -48,7 +72,13 @@ def analyze(
         _err.print(f"[red]Error reading event log:[/red] {exc}")
         raise typer.Exit(1)
 
-    findings = [f for rule in _RULES for f in rule.analyze(application)]
+    active_rules = [
+        DataSkewRule(skew_ratio=skew_ratio),
+        ShuffleSizeRule(threshold_bytes=int(shuffle_gb * 1_073_741_824)),
+        SpillRule(memory_threshold_bytes=spill_memory_mb * 1_048_576),
+        PartitionCountRule(min_tasks_per_core=min_tasks_per_core, max_partitions=max_partitions),
+    ]
+    findings = [f for rule in active_rules for f in rule.analyze(application)]
 
     if output == OutputFormat.json:
         json_reporter.render_findings(findings, application.app_id, application.app_name)
@@ -61,7 +91,7 @@ def analyze(
 
 @app.command()
 def rules() -> None:
-    """List all available rules with their severity and trigger threshold."""
+    """List all available rules with their default severity and trigger threshold."""
     console = Console()
     table = Table(box=box.SIMPLE_HEAD, show_header=True, header_style="bold", expand=False)
     table.add_column("Rule", style="bold")
@@ -69,7 +99,7 @@ def rules() -> None:
     table.add_column("Threshold")
     table.add_column("Description")
 
-    for rule in _RULES:
+    for rule in _DEFAULT_RULES:
         info = rule.describe()
         table.add_row(info.id, info.severity, info.threshold, info.description)
 
