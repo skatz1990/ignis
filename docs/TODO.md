@@ -42,7 +42,7 @@ All four initial rules are implemented and on main:
 
 ## Storage / Input
 
-- [ ] S3 support — already architected via `fsspec`. Needs a real-world test against an S3 path and docs on credential setup (`AWS_PROFILE`, instance role, etc.).
+- [x] S3 support — `pip install spark-ignis[s3]` installs `s3fs`; credentials via standard AWS chain. Tested with in-memory fsspec mock.
 - [ ] Compressed logs — Spark can gzip event logs (`spark.eventLog.compress=true`). `fsspec` handles `.gz` transparently; verify and add a test fixture.
 
 ---

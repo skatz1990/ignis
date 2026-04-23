@@ -8,7 +8,14 @@ from .models import Application, Stage, Task, TaskMetrics
 def parse_event_log(path: str) -> Application:
     app = Application(app_id="unknown", app_name="unknown")
 
-    with fsspec.open(path, "rt", encoding="utf-8") as f:
+    try:
+        ctx = fsspec.open(path, "rt", encoding="utf-8")
+    except (ImportError, ValueError) as exc:
+        if path.startswith("s3://") and "s3" in str(exc).lower():
+            raise ImportError("S3 support requires s3fs: pip install 'spark-ignis[s3]'") from exc
+        raise
+
+    with ctx as f:
         for line in f:
             line = line.strip()
             if not line:
