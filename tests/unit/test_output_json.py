@@ -6,8 +6,9 @@ from ignis.reporter.json_reporter import render_findings
 from ignis.rules.partition import PartitionCountRule
 from ignis.rules.skew import DataSkewRule
 
-SKEW_FIXTURE = str(pathlib.Path(__file__).parent / "fixtures" / "skew_example.ndjson")
-PARTITION_FIXTURE = str(pathlib.Path(__file__).parent / "fixtures" / "partition_example.ndjson")
+_FIXTURES = pathlib.Path(__file__).parent.parent / "fixtures"
+SKEW_FIXTURE = str(_FIXTURES / "skew_example.ndjson")
+PARTITION_FIXTURE = str(_FIXTURES / "partition_example.ndjson")
 
 
 def test_json_output_is_valid_json(capsys):

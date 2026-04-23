@@ -27,9 +27,9 @@ All four initial rules are implemented and on main:
 
 ## CLI / Output
 
-- [ ] `--output json` flag — emit findings as JSON for scripting and CI integration.
+- [x] `--output json` flag — emits `{app_id, app_name, finding_count, findings[]}` to stdout.
+- [x] `ignis rules` command — lists all rules with severity and threshold.
 - [ ] `--output html` flag — self-contained HTML report with charts.
-- [ ] `--rules` flag — list available rules with descriptions and thresholds.
 - [ ] `--threshold` overrides — e.g. `--skew-ratio 3.0` to tighten the default.
 
 ---
@@ -43,6 +43,9 @@ All four initial rules are implemented and on main:
 ## Storage / Input
 
 - [x] S3 support — `pip install spark-ignis[s3]` installs `s3fs`; credentials via standard AWS chain. Tested with in-memory fsspec mock.
+- [x] GCS support — `pip install spark-ignis[gcs]` installs `gcsfs`; credentials via standard GCP chain.
+- [x] Azure ADLS Gen2 support — `pip install spark-ignis[azure]` installs `adlfs`; credentials via standard Azure chain.
+- [ ] Cloud integration tests — optional `@pytest.mark.integration` suite that runs against real buckets when credentials are present. Currently all cloud tests use an in-memory fsspec mock.
 - [ ] Compressed logs — Spark can gzip event logs (`spark.eventLog.compress=true`). `fsspec` handles `.gz` transparently; verify and add a test fixture.
 
 ---

@@ -2,7 +2,7 @@ import pathlib
 
 from ignis.parser.event_log import parse_event_log
 
-FIXTURE = str(pathlib.Path(__file__).parent / "fixtures" / "duration_null.ndjson")
+FIXTURE = str(pathlib.Path(__file__).parent.parent / "fixtures" / "duration_null.ndjson")
 
 
 # Task 0: Launch=1700000001000, Finish=1700000001200 → 200ms

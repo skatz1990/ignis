@@ -3,7 +3,7 @@ import pathlib
 from ignis.parser.event_log import parse_event_log
 from ignis.rules.shuffle import SHUFFLE_WRITE_THRESHOLD_BYTES, ShuffleSizeRule
 
-FIXTURE = str(pathlib.Path(__file__).parent / "fixtures" / "shuffle_example.ndjson")
+FIXTURE = str(pathlib.Path(__file__).parent.parent / "fixtures" / "shuffle_example.ndjson")
 
 # Stage 0 shuffle write: 429_496_730 + 429_496_730 + 322_122_568 = 1_181_116_028 bytes (~1.1 GB)
 STAGE0_TOTAL_BYTES = 429_496_730 + 429_496_730 + 322_122_568
