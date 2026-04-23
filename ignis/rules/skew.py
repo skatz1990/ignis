@@ -9,6 +9,9 @@ MIN_TASKS_FOR_ANALYSIS = 3
 
 
 class DataSkewRule(Rule):
+    def __init__(self, skew_ratio: float = SKEW_RATIO_THRESHOLD) -> None:
+        self.skew_ratio = skew_ratio
+
     def analyze(self, app: Application) -> list[Finding]:
         findings = []
         for stage in app.stages.values():
@@ -24,7 +27,7 @@ class DataSkewRule(Rule):
                 continue
 
             ratio = max_ms / median_ms
-            if ratio >= SKEW_RATIO_THRESHOLD:
+            if ratio >= self.skew_ratio:
                 findings.append(
                     Finding(
                         rule="data-skew",
@@ -49,5 +52,5 @@ class DataSkewRule(Rule):
             id="data-skew",
             description="One task takes far longer than its peers in a shuffle stage",
             severity="WARNING",
-            threshold=f"max task ≥ {SKEW_RATIO_THRESHOLD}× median task duration",
+            threshold=f"max task ≥ {self.skew_ratio}× median task duration",
         )

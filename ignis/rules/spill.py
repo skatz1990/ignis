@@ -17,6 +17,9 @@ def _fmt_bytes(n: int) -> str:
 
 
 class SpillRule(Rule):
+    def __init__(self, memory_threshold_bytes: int = MEMORY_SPILL_THRESHOLD_BYTES) -> None:
+        self.memory_threshold_bytes = memory_threshold_bytes
+
     def analyze(self, app: Application) -> list[Finding]:
         findings = []
         for stage in app.stages.values():
@@ -53,7 +56,7 @@ class SpillRule(Rule):
 
             # Memory spill — flag only when the total is significant.
             total_memory = sum(t.metrics.memory_spill_bytes for t in successful)
-            if total_memory >= MEMORY_SPILL_THRESHOLD_BYTES:
+            if total_memory >= self.memory_threshold_bytes:
                 findings.append(
                     Finding(
                         rule="spill",
@@ -75,7 +78,7 @@ class SpillRule(Rule):
         return findings
 
     def describe(self) -> RuleInfo:
-        mem_mb = MEMORY_SPILL_THRESHOLD_BYTES // 1_048_576
+        mem_mb = self.memory_threshold_bytes // 1_048_576
         return RuleInfo(
             id="spill",
             description="Tasks spill execution data to disk or show significant memory pressure",

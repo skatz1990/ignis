@@ -9,6 +9,14 @@ MAX_PARTITION_COUNT = 10_000
 
 
 class PartitionCountRule(Rule):
+    def __init__(
+        self,
+        min_tasks_per_core: int = MIN_TASKS_PER_CORE,
+        max_partitions: int = MAX_PARTITION_COUNT,
+    ) -> None:
+        self.min_tasks_per_core = min_tasks_per_core
+        self.max_partitions = max_partitions
+
     def analyze(self, app: Application) -> list[Finding]:
         findings = []
         for stage in app.stages.values():
@@ -25,7 +33,7 @@ class PartitionCountRule(Rule):
             # Fall back to len(tasks) for stubs created without StageSubmitted.
             task_count = stage.num_tasks or len(stage.tasks)
 
-            if task_count > MAX_PARTITION_COUNT:
+            if task_count > self.max_partitions:
                 findings.append(
                     Finding(
                         rule="partition-count",
@@ -43,7 +51,9 @@ class PartitionCountRule(Rule):
                         ),
                     )
                 )
-            elif app.executor_cores > 0 and task_count < MIN_TASKS_PER_CORE * app.executor_cores:
+            elif (
+                app.executor_cores > 0 and task_count < self.min_tasks_per_core * app.executor_cores
+            ):
                 findings.append(
                     Finding(
                         rule="partition-count",
@@ -57,8 +67,9 @@ class PartitionCountRule(Rule):
                         ),
                         recommendation=(
                             f"Raise spark.sql.shuffle.partitions to at least "
-                            f"{MIN_TASKS_PER_CORE * app.executor_cores} "
-                            f"(2× your {app.executor_cores} executor cores)."
+                            f"{self.min_tasks_per_core * app.executor_cores} "
+                            f"({self.min_tasks_per_core}× your "
+                            f"{app.executor_cores} executor cores)."
                         ),
                     )
                 )
@@ -70,6 +81,7 @@ class PartitionCountRule(Rule):
             description="Shuffle partition count leaves the cluster idle or overwhelms the driver",
             severity="WARNING",
             threshold=(
-                f"< {MIN_TASKS_PER_CORE}× executor cores or > {MAX_PARTITION_COUNT:,} partitions"
+                f"< {self.min_tasks_per_core}× executor cores or "
+                f"> {self.max_partitions:,} partitions"
             ),
         )
