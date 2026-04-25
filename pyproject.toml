@@ -6,6 +6,7 @@ build-backend = "hatchling.build"
 name = "spark-ignis"
 dynamic = ["version"]
 description = "ESLint for Apache Spark jobs — analyze event logs, diagnose performance issues"
+license = { file = "LICENSE" }
 requires-python = ">=3.10"
 dependencies = [
     "typer>=0.12",
