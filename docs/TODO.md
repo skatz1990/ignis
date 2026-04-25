@@ -51,6 +51,16 @@ All four initial rules are implemented and on main:
 
 ---
 
+## Automation / Integrations
+
+ignis is a reactive tool — it analyzes event logs after a Spark job completes. The natural next step is making it run automatically as part of a larger workflow.
+
+- [ ] **Orchestrator integration** — document (and potentially provide helpers for) running `ignis analyze` as a post-Spark task in Airflow, Dagster, or Prefect, using exit code and JSON output to route findings.
+- [ ] **Cloud event trigger** — support triggering ignis via S3/GCS/Azure Blob event notifications (e.g. Lambda, Cloud Function, Azure Function) so analysis runs automatically when a new event log appears in a bucket.
+- [ ] **Notification / routing layer** — a way to send findings somewhere actionable: Slack webhook, PagerDuty, a database. Required for any automated workflow to be useful beyond logging.
+
+---
+
 ## Dev / Testing infrastructure
 
 - [ ] Add real Spark 3.x event log fixture and compat tests — currently only Spark 4.0.2 has a real event log; all Spark 3.x tests use synthetic hand-crafted fixtures. Needed before confidently promoting past 0.1.0.
