@@ -37,7 +37,7 @@ All four initial rules are implemented and on main:
 ## Distribution
 
 - [x] Publish to PyPI as `spark-ignis` — versioned via git tags (`hatch-vcs`), published via GitHub Actions trusted publishing on every `v*` tag push.
-- [ ] Set up a dedicated GitHub Actions `pypi` environment with required reviewers to gate publishes — currently any `v*` tag push triggers an immediate publish with no approval step.
+- [x] Set up a dedicated GitHub Actions `pypi` environment with required reviewers to gate publishes.
 
 ---
 
