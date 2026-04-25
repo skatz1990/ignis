@@ -9,7 +9,7 @@ def parse_event_log(path: str, **storage_options: object) -> Application:
     app = Application(app_id="unknown", app_name="unknown")
 
     try:
-        ctx = fsspec.open(path, "rt", encoding="utf-8", **storage_options)
+        ctx = fsspec.open(path, "rt", encoding="utf-8", compression="infer", **storage_options)
     except (ImportError, ValueError) as exc:
         _raise_if_missing_backend(path, exc)
         raise
