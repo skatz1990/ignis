@@ -7,6 +7,25 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [Unreleased]
+
+---
+
+## [0.2.0] — 2026-04-25
+
+### Added
+
+- **Failed tasks / speculation rule** — flags stages where failed tasks exceed 10% (WARNING) or speculative tasks exceed 25% (INFO); `--failure-rate` and `--speculation-rate` CLI overrides
+- **GC pressure rule** — flags stages where JVM GC time exceeds 10% of executor run time (WARNING); `--gc-ratio` CLI override
+- Compressed log support — `.gz`, `.bz2`, and `.zst` event logs are decompressed transparently via `compression="infer"`
+- Spark 3.5.0 compatibility — verified against a real event log generated from a Spark 3.5.0 job
+
+### Changed
+
+- PyPI publish workflow now requires manual approval via a dedicated GitHub Actions `pypi` environment before uploading
+
+---
+
 ## [0.1.0] — 2026-04-22
 
 Initial release.
