@@ -8,6 +8,12 @@ from rich.table import Table
 from ignis.parser.event_log import parse_event_log
 from ignis.reporter import json_reporter
 from ignis.reporter import terminal as terminal_reporter
+from ignis.rules.failed_tasks import (
+    TASK_FAILURE_RATE_THRESHOLD,
+    TASK_SPECULATION_RATE_THRESHOLD,
+    FailedTasksRule,
+)
+from ignis.rules.gc_pressure import GC_RATIO_THRESHOLD, GCPressureRule
 from ignis.rules.partition import MAX_PARTITION_COUNT, MIN_TASKS_PER_CORE, PartitionCountRule
 from ignis.rules.shuffle import SHUFFLE_WRITE_THRESHOLD_BYTES, ShuffleSizeRule
 from ignis.rules.skew import SKEW_RATIO_THRESHOLD, DataSkewRule
@@ -22,7 +28,14 @@ app = typer.Typer(
 _err = Console(stderr=True)
 
 # Default rule instances — used by `ignis rules` to show default thresholds.
-_DEFAULT_RULES = [DataSkewRule(), ShuffleSizeRule(), SpillRule(), PartitionCountRule()]
+_DEFAULT_RULES = [
+    DataSkewRule(),
+    ShuffleSizeRule(),
+    SpillRule(),
+    PartitionCountRule(),
+    FailedTasksRule(),
+    GCPressureRule(),
+]
 
 
 class OutputFormat(str, Enum):
@@ -64,6 +77,21 @@ def analyze(
         "--max-partitions",
         help="Maximum shuffle partitions before flagging scheduling overhead.",
     ),
+    failure_rate: float = typer.Option(
+        TASK_FAILURE_RATE_THRESHOLD,
+        "--failure-rate",
+        help="Fraction of failed tasks per stage to flag (0.0–1.0).",
+    ),
+    speculation_rate: float = typer.Option(
+        TASK_SPECULATION_RATE_THRESHOLD,
+        "--speculation-rate",
+        help="Fraction of speculative tasks per stage to flag (0.0–1.0).",
+    ),
+    gc_ratio: float = typer.Option(
+        GC_RATIO_THRESHOLD,
+        "--gc-ratio",
+        help="GC time as a fraction of executor run time to flag (0.0–1.0).",
+    ),
 ) -> None:
     """Analyze a Spark event log and report performance issues."""
     try:
@@ -77,6 +105,8 @@ def analyze(
         ShuffleSizeRule(threshold_bytes=int(shuffle_gb * 1_073_741_824)),
         SpillRule(memory_threshold_bytes=spill_memory_mb * 1_048_576),
         PartitionCountRule(min_tasks_per_core=min_tasks_per_core, max_partitions=max_partitions),
+        FailedTasksRule(failure_rate=failure_rate, speculation_rate=speculation_rate),
+        GCPressureRule(gc_ratio=gc_ratio),
     ]
     findings = [f for rule in active_rules for f in rule.analyze(application)]
 

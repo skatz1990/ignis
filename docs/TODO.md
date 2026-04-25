@@ -14,8 +14,8 @@ All four initial rules are implemented and on main:
 
 ### Future rules
 
-- [ ] **Failed tasks / speculation** — flag stages with high task failure or speculation rates.
-- [ ] **Executor memory pressure** — flag high JVM GC time as a fraction of executor run time.
+- [x] **Failed tasks / speculation** — `FailedTasksRule`: failure rate ≥ 10% (WARNING), speculation rate ≥ 25% (INFO).
+- [x] **Executor memory pressure** — `GCPressureRule`: GC time ≥ 10% of executor run time (WARNING).
 
 ---
 
