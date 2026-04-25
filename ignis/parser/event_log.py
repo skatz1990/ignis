@@ -9,7 +9,7 @@ def parse_event_log(path: str, **storage_options: object) -> Application:
     app = Application(app_id="unknown", app_name="unknown")
 
     try:
-        ctx = fsspec.open(path, "rt", encoding="utf-8", **storage_options)
+        ctx = fsspec.open(path, "rt", encoding="utf-8", compression="infer", **storage_options)
     except (ImportError, ValueError) as exc:
         _raise_if_missing_backend(path, exc)
         raise
@@ -91,6 +91,7 @@ def _handle_task_end(event: dict, app: Application) -> None:
         metrics = TaskMetrics(
             duration_ms=duration_ms,
             executor_run_time_ms=raw_metrics.get("Executor Run Time", 0),
+            gc_time_ms=raw_metrics.get("JVM GC Time", 0),
             shuffle_read_bytes=(
                 shuffle_read.get("Remote Bytes Read", 0) + shuffle_read.get("Local Bytes Read", 0)
             ),
@@ -104,6 +105,7 @@ def _handle_task_end(event: dict, app: Application) -> None:
         stage_id=stage_id,
         stage_attempt_id=attempt_id,
         successful=not task_info.get("Failed", False) and not task_info.get("Killed", False),
+        speculative=task_info.get("Speculative", False),
         metrics=metrics,
     )
 

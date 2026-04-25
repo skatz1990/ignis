@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 class TaskMetrics:
     duration_ms: int
     executor_run_time_ms: int = 0
+    gc_time_ms: int = 0
     shuffle_read_bytes: int = 0
     shuffle_write_bytes: int = 0
     memory_spill_bytes: int = 0
@@ -17,6 +18,7 @@ class Task:
     stage_id: int
     stage_attempt_id: int
     successful: bool
+    speculative: bool = False
     metrics: TaskMetrics | None = None
 
 

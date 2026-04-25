@@ -14,8 +14,8 @@ All four initial rules are implemented and on main:
 
 ### Future rules
 
-- [ ] **Failed tasks / speculation** — flag stages with high task failure or speculation rates.
-- [ ] **Executor memory pressure** — flag high JVM GC time as a fraction of executor run time.
+- [x] **Failed tasks / speculation** — `FailedTasksRule`: failure rate ≥ 10% (WARNING), speculation rate ≥ 25% (INFO).
+- [x] **Executor memory pressure** — `GCPressureRule`: GC time ≥ 10% of executor run time (WARNING).
 
 ---
 
@@ -47,12 +47,22 @@ All four initial rules are implemented and on main:
 - [x] GCS support — `pip install spark-ignis[gcs]` installs `gcsfs`; credentials via standard GCP chain.
 - [x] Azure ADLS Gen2 support — `pip install spark-ignis[azure]` installs `adlfs`; credentials via standard Azure chain.
 - [x] Cloud integration tests — Docker-based suite using MinIO, fake-gcs-server, and Azurite via testcontainers. Runs in CI on every PR.
-- [ ] Compressed logs — Spark can gzip event logs (`spark.eventLog.compress=true`). `fsspec` handles `.gz` transparently; verify and add a test fixture.
+- [x] Compressed logs — `compression="infer"` in `fsspec.open` handles `.gz` (and `.bz2`, `.zst`) transparently; verified with a gzipped fixture.
+
+---
+
+## Automation / Integrations
+
+ignis is a reactive tool — it analyzes event logs after a Spark job completes. The natural next step is making it run automatically as part of a larger workflow.
+
+- [ ] **Orchestrator integration** — document (and potentially provide helpers for) running `ignis analyze` as a post-Spark task in Airflow, Dagster, or Prefect, using exit code and JSON output to route findings.
+- [ ] **Cloud event trigger** — support triggering ignis via S3/GCS/Azure Blob event notifications (e.g. Lambda, Cloud Function, Azure Function) so analysis runs automatically when a new event log appears in a bucket.
+- [ ] **Notification / routing layer** — a way to send findings somewhere actionable: Slack webhook, PagerDuty, a database. Required for any automated workflow to be useful beyond logging.
 
 ---
 
 ## Dev / Testing infrastructure
 
-- [ ] Add real Spark 3.x event log fixture and compat tests — currently only Spark 4.0.2 has a real event log; all Spark 3.x tests use synthetic hand-crafted fixtures. Needed before confidently promoting past 0.1.0.
+- [x] Add real Spark 3.x event log fixture and compat tests — `spark35_compat.ndjson` generated from a real Spark 3.5.0 SparkPi job via Docker; 4 parser compat tests added.
 - [ ] Integration test that runs the K8s job and asserts ignis finds the skew finding — currently `make run` is manual.
 - [ ] Consider `pytest-snapshot` for reporter output to catch formatting regressions.
