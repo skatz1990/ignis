@@ -47,7 +47,7 @@ All four initial rules are implemented and on main:
 - [x] GCS support — `pip install spark-ignis[gcs]` installs `gcsfs`; credentials via standard GCP chain.
 - [x] Azure ADLS Gen2 support — `pip install spark-ignis[azure]` installs `adlfs`; credentials via standard Azure chain.
 - [x] Cloud integration tests — Docker-based suite using MinIO, fake-gcs-server, and Azurite via testcontainers. Runs in CI on every PR.
-- [ ] Compressed logs — Spark can gzip event logs (`spark.eventLog.compress=true`). `fsspec` handles `.gz` transparently; verify and add a test fixture.
+- [x] Compressed logs — `compression="infer"` in `fsspec.open` handles `.gz` (and `.bz2`, `.zst`) transparently; verified with a gzipped fixture.
 
 ---
 
