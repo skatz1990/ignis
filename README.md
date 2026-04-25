@@ -1,5 +1,10 @@
 # Ignis
 
+[![CI](https://github.com/skatz1990/ignis/actions/workflows/ci.yml/badge.svg)](https://github.com/skatz1990/ignis/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/spark-ignis)](https://pypi.org/project/spark-ignis/)
+[![Python](https://img.shields.io/pypi/pyversions/spark-ignis)](https://pypi.org/project/spark-ignis/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 ESLint for Apache Spark jobs. Point it at an event log and get actionable diagnostics for data skew, shuffle size, spill, and bad partitioning.
 
 ```
