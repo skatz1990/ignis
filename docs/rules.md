@@ -161,3 +161,72 @@ Ignis parses `SparkListenerExecutorAdded` events to determine total available ex
 - **`num_tasks > 10,000`** → WARNING (scheduling overhead). Recommendation: lower `spark.sql.shuffle.partitions`; a good starting point is 2–4× your executor core count.
 
 `num_tasks` is taken from the `Number of Tasks` field in `SparkListenerStageSubmitted`, which reflects the configured partition count — not the number of task events in the log.
+
+---
+
+## Rule: Failed Tasks
+
+**ID:** `failed-tasks` | **Implemented in** `ignis/rules/failed_tasks.py`
+
+### What it is
+
+Spark tasks fail when an executor throws an exception — `OutOfMemoryError`, `NullPointerException`, a network timeout, a corrupt input record. When a task fails, Spark retries it automatically (up to `spark.task.maxFailures` times, default 4). Speculative tasks are duplicate copies Spark launches proactively when a task appears slower than its peers — a different mechanism, but also a signal that something is wrong.
+
+### Why it matters
+
+**Failed tasks** indicate genuine errors in the job. Even when Spark retries successfully, failures add latency (the original attempt ran and failed before the retry started) and waste cluster resources. A high failure rate means the job is fragile and may not complete at all if failures exceed `spark.task.maxFailures`.
+
+**Speculative tasks** indicate straggler tasks — executors or nodes that are persistently slow. Spark's speculation mechanism works around them, but the underlying cause (GC pressure, disk saturation, a bad node) still costs CPU and memory on two executors for one partition's worth of work.
+
+### How ignis detects it
+
+For each stage with at least 3 total tasks:
+
+```
+failure_rate     = failed_tasks / total_tasks
+speculation_rate = speculative_tasks / total_tasks
+```
+
+- **`failure_rate ≥ TASK_FAILURE_RATE_THRESHOLD`** (default: **10%**) → WARNING
+- **`speculation_rate ≥ TASK_SPECULATION_RATE_THRESHOLD`** (default: **25%**) → INFO
+
+A task is counted as failed if `"Failed": true` in its `SparkListenerTaskEnd` event. A task is counted as speculative if `"Speculative": true`.
+
+**Why 10% for failures?**
+Isolated single-task failures are common and harmless — a transient network glitch, a momentarily unhealthy executor. A 10% failure rate means roughly 1 in 10 partitions is problematic, which is well past transient noise and points to a structural issue.
+
+**Why 25% for speculation?**
+Speculation is Spark's self-healing mechanism. A handful of speculative tasks on a large stage is expected and healthy. 25% means one quarter of all partitions were slow enough to trigger a duplicate — at that point the speculation is masking a systemic cluster or data problem, not an edge case.
+
+---
+
+## Rule: GC Pressure
+
+**ID:** `gc-pressure` | **Implemented in** `ignis/rules/gc_pressure.py`
+
+### What it is
+
+Java's garbage collector (GC) reclaims memory occupied by objects that are no longer referenced. When Spark executors create large numbers of short-lived objects — as happens with Python UDFs, RDD operations, or complex transformations over Row objects — the GC must run frequently and for long periods. During a GC pause, the JVM halts all application threads. Tasks make no progress.
+
+### Why it matters
+
+GC time is pure overhead. A task that spends 30% of its wall-clock time in GC is only doing 70% of its intended work. On a large cluster, this translates directly to wasted executor-hours. Unlike spill or skew, GC pressure is often invisible unless you look at the per-task `JVM GC Time` metric — it shows up as slow stages with no obvious cause.
+
+Sustained GC pressure is also a leading indicator of spill: if executors are under memory pressure severe enough to trigger frequent GC, they may soon begin spilling execution data to disk.
+
+### How ignis detects it
+
+For each stage with at least one successful task:
+
+```
+total_gc  = sum(task.metrics.gc_time_ms  for task in successful_tasks)
+total_run = sum(task.metrics.executor_run_time_ms for task in successful_tasks)
+ratio     = total_gc / total_run
+```
+
+If `ratio ≥ GC_RATIO_THRESHOLD` (default: **10%**) → WARNING.
+
+The metric `JVM GC Time` is present in `SparkListenerTaskEnd` for both Spark 3.x and 4.x. `Executor Run Time` is the total wall-clock time the task spent executing on the executor (excluding scheduler delay, deserialization, and result serialization). Dividing one by the other gives the fraction of productive executor time lost to GC.
+
+**Recommendation**
+Reduce object churn by using primitive types, Datasets with encoders, or columnar formats rather than row-by-row RDD operations. Increase executor memory to give GC more headroom. Tune the GC algorithm via `spark.executor.extraJavaOptions=-XX:+UseG1GC` (G1GC handles large heaps better than the default ParallelGC).

@@ -30,7 +30,14 @@ $ ignis analyze /path/to/spark-event-log
 
 ## Installation
 
-Not yet on PyPI. Install from source:
+```bash
+pip install spark-ignis            # core only
+pip install "spark-ignis[s3]"      # + AWS S3
+pip install "spark-ignis[gcs]"     # + Google Cloud Storage
+pip install "spark-ignis[azure]"   # + Azure Data Lake Storage
+```
+
+Or install from source:
 
 ```bash
 git clone https://github.com/skatz1990/ignis
@@ -120,6 +127,8 @@ Credentials from the standard Azure chain:
 | `shuffle-size` | A stage writes an excessive amount of data to shuffle files | total shuffle write ≥ 1 GB |
 | `spill` | Tasks spill execution data to disk or show significant memory pressure | any disk spill (WARNING); memory spill ≥ 500 MB (INFO) |
 | `partition-count` | Shuffle partition count leaves the cluster idle or overwhelms the driver | < 2× executor cores or > 10,000 partitions |
+| `failed-tasks` | High rate of task failures or speculative task launches in a stage | failure rate ≥ 10% (WARNING); speculation rate ≥ 25% (INFO) |
+| `gc-pressure` | JVM garbage collection consumes a large fraction of executor run time | GC time ≥ 10% of executor run time (WARNING) |
 
 Run `ignis rules` for a live summary with thresholds.
 
