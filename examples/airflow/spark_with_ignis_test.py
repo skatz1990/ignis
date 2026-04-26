@@ -31,7 +31,6 @@ with DAG(
     catchup=False,
     tags=["spark", "ignis", "test"],
 ) as dag:
-
     # Mock spark-submit: just return the fixture path as if it were an app ID
     spark_job = BashOperator(
         task_id="spark_job",
@@ -46,7 +45,7 @@ with DAG(
         bash_command=(
             "ignis analyze {{ ti.xcom_pull(task_ids='spark_job') }} --output json "
             "> /tmp/ignis_findings.json; "
-            "python3 -c \""
+            'python3 -c "'
             "import json; print(json.dumps(json.load(open('/tmp/ignis_findings.json'))))\""
         ),
         do_xcom_push=True,
@@ -71,8 +70,7 @@ with DAG(
     notify_findings = BashOperator(
         task_id="notify_findings",
         bash_command=(
-            "echo '--- ignis findings ---' && "
-            "python3 -m json.tool /tmp/ignis_findings.json"
+            "echo '--- ignis findings ---' && python3 -m json.tool /tmp/ignis_findings.json"
         ),
     )
 

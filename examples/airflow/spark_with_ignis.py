@@ -39,8 +39,7 @@ SPARK_SUBMIT = "spark-submit"
 # spark.eventLog.dir = s3://my-spark-logs/events/
 # spark.app.name     = my-spark-job   →  app ID becomes part of the filename
 SPARK_CONF = (
-    f"--conf spark.eventLog.enabled=true "
-    f"--conf spark.eventLog.dir=s3://{S3_LOG_BUCKET}/events/"
+    f"--conf spark.eventLog.enabled=true --conf spark.eventLog.dir=s3://{S3_LOG_BUCKET}/events/"
 )
 
 # Always exit 0 — branching is driven by finding_count in the JSON, not
@@ -71,7 +70,6 @@ with DAG(
     catchup=False,
     tags=["spark", "ignis"],
 ) as dag:
-
     # 1. Submit the Spark job.
     #    Push the event log app ID to XCom so ignis_analyze can build the path.
     spark_job = BashOperator(
