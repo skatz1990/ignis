@@ -8,8 +8,11 @@ from .models import Application, Stage, Task, TaskMetrics
 def parse_event_log(path: str, **storage_options: object) -> Application:
     app = Application(app_id="unknown", app_name="unknown")
 
+    # fsspec infers .zst → zstd but not .zstd; handle the longer extension explicitly.
+    compression = "zstd" if path.split("?")[0].endswith(".zstd") else "infer"
+
     try:
-        ctx = fsspec.open(path, "rt", encoding="utf-8", compression="infer", **storage_options)
+        ctx = fsspec.open(path, "rt", encoding="utf-8", compression=compression, **storage_options)
     except (ImportError, ValueError) as exc:
         _raise_if_missing_backend(path, exc)
         raise
