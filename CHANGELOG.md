@@ -11,6 +11,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [0.3.1] — 2026-04-25
+
+### Fixed
+
+- `ignis notify slack` now reads the webhook URL from `IGNIS_SLACK_WEBHOOK` env var (keeps URL out of shell history and CI logs); CLI argument still works as an override
+- `ignis notify email` now reads credentials from `IGNIS_SMTP_USERNAME` / `IGNIS_SMTP_PASSWORD` env vars; `--username` / `--password` flags still work as overrides
+- Email SMTP AUTH login is now skipped when the server does not advertise the AUTH extension, fixing failures against relays that don't require authentication
+- `publish.yml` aligned to `actions/checkout@v6` (was inconsistently on v4)
+
+---
+
 ## [0.3.0] — 2026-04-25
 
 ### Added
