@@ -21,7 +21,7 @@ All four initial rules are implemented and on main:
 
 ## Parser
 
-- [ ] Parse stage parent IDs (`Parent IDs` in Stage Info) to reconstruct the stage DAG — enables rules that reason about multi-stage pipelines.
+- [x] Parse stage parent IDs (`Parent IDs` in Stage Info) — `Stage.parent_ids`, `Application.parents_of()`, `Application.children_of()` enable rules that reason about multi-stage pipelines.
 
 ---
 
@@ -62,5 +62,4 @@ ignis is a reactive tool — it analyzes event logs after a Spark job completes.
 ## Dev / Testing infrastructure
 
 - [x] Add real Spark 3.x event log fixture and compat tests — `spark35_compat.ndjson` generated from a real Spark 3.5.0 SparkPi job via Docker; 4 parser compat tests added.
-- [ ] Integration test that runs the K8s job and asserts ignis finds the skew finding — currently `make run` is manual.
 - [ ] Consider `pytest-snapshot` for reporter output to catch formatting regressions.
