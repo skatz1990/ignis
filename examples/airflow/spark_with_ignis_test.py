@@ -9,13 +9,17 @@ a Spark cluster or cloud storage.
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import BranchPythonOperator
 
-FIXTURE_PATH = "/Users/shaharkatz/Repos/ignis/tests/fixtures/skew_example.ndjson"
+_REPO_ROOT = Path(__file__).parent.parent.parent
+_DEFAULT_FIXTURE = _REPO_ROOT / "tests" / "fixtures" / "skew_example.ndjson"
+FIXTURE_PATH = os.environ.get("IGNIS_TEST_FIXTURE", str(_DEFAULT_FIXTURE))
 
 default_args = {
     "owner": "data-engineering",
