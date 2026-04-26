@@ -1,3 +1,5 @@
+import json
+import sys
 from enum import Enum
 
 import typer
@@ -24,6 +26,9 @@ app = typer.Typer(
     help="ESLint for Apache Spark jobs — analyze event logs, diagnose performance issues.",
     no_args_is_help=True,
 )
+
+notify_app = typer.Typer(help="Send findings to notification channels.", no_args_is_help=True)
+app.add_typer(notify_app, name="notify")
 
 _err = Console(stderr=True)
 
@@ -134,6 +139,34 @@ def rules() -> None:
         table.add_row(info.id, info.severity, info.threshold, info.description)
 
     console.print(table)
+
+
+@notify_app.command("slack")
+def notify_slack(
+    webhook_url: str = typer.Argument(..., help="Slack incoming webhook URL."),
+    always: bool = typer.Option(
+        False, "--always", help="Post even when there are no findings (clean-run confirmation)."
+    ),
+) -> None:
+    """Read findings JSON from stdin and post a summary to a Slack webhook."""
+    from ignis.notify.slack import post
+
+    try:
+        data = json.loads(sys.stdin.read())
+    except json.JSONDecodeError as exc:
+        _err.print(f"[red]Invalid JSON on stdin:[/red] {exc}")
+        raise typer.Exit(1)
+
+    finding_count = data.get("finding_count", 0)
+
+    if finding_count == 0 and not always:
+        return
+
+    try:
+        post(webhook_url, data)
+    except RuntimeError as exc:
+        _err.print(f"[red]Slack notification failed:[/red] {exc}")
+        raise typer.Exit(1)
 
 
 def main() -> None:

@@ -9,6 +9,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- **`ignis notify slack <webhook-url>`** — reads findings JSON from stdin and posts a formatted Block Kit message to a Slack webhook; silent no-op on clean runs, `--always` flag for clean-run confirmations
+
 ---
 
 ## [0.2.0] — 2026-04-25
