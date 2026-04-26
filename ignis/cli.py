@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 from enum import Enum
 
@@ -147,12 +148,23 @@ def notify_email(
     sender: str = typer.Option(..., "--from", help="Sender email address."),
     smtp_host: str = typer.Option("localhost", "--smtp-host", help="SMTP server hostname."),
     smtp_port: int = typer.Option(587, "--smtp-port", help="SMTP server port."),
-    username: str = typer.Option(None, "--username", help="SMTP username."),
-    password: str = typer.Option(None, "--password", help="SMTP password."),
+    username: str = typer.Option(
+        None, "--username", help="SMTP username (or set IGNIS_SMTP_USERNAME)."
+    ),
+    password: str = typer.Option(
+        None, "--password", help="SMTP password (or set IGNIS_SMTP_PASSWORD)."
+    ),
     always: bool = typer.Option(False, "--always", help="Send even when there are no findings."),
 ) -> None:
-    """Read findings JSON from stdin and send a summary email via SMTP."""
+    """Read findings JSON from stdin and send a summary email via SMTP.
+
+    Credentials are read from IGNIS_SMTP_USERNAME / IGNIS_SMTP_PASSWORD environment
+    variables when the corresponding flags are not provided.
+    """
     from ignis.notify.email import send
+
+    resolved_username = username or os.environ.get("IGNIS_SMTP_USERNAME")
+    resolved_password = password or os.environ.get("IGNIS_SMTP_PASSWORD")
 
     try:
         data = json.loads(sys.stdin.read())
@@ -170,8 +182,8 @@ def notify_email(
             sender=sender,
             smtp_host=smtp_host,
             smtp_port=smtp_port,
-            username=username,
-            password=password,
+            username=resolved_username,
+            password=resolved_password,
         )
     except Exception as exc:
         _err.print(f"[red]Email notification failed:[/red] {exc}")
@@ -180,13 +192,26 @@ def notify_email(
 
 @notify_app.command("slack")
 def notify_slack(
-    webhook_url: str = typer.Argument(..., help="Slack incoming webhook URL."),
+    webhook_url: str = typer.Argument(
+        None, help="Slack incoming webhook URL (or set IGNIS_SLACK_WEBHOOK)."
+    ),
     always: bool = typer.Option(
         False, "--always", help="Post even when there are no findings (clean-run confirmation)."
     ),
 ) -> None:
-    """Read findings JSON from stdin and post a summary to a Slack webhook."""
+    """Read findings JSON from stdin and post a summary to a Slack webhook.
+
+    The webhook URL can be supplied as an argument or via the IGNIS_SLACK_WEBHOOK
+    environment variable (preferred — keeps the URL out of shell history and logs).
+    """
     from ignis.notify.slack import post
+
+    resolved_url = webhook_url or os.environ.get("IGNIS_SLACK_WEBHOOK")
+    if not resolved_url:
+        _err.print(
+            "[red]Webhook URL required:[/red] pass it as an argument or set IGNIS_SLACK_WEBHOOK."
+        )
+        raise typer.Exit(1)
 
     try:
         data = json.loads(sys.stdin.read())
@@ -194,13 +219,11 @@ def notify_slack(
         _err.print(f"[red]Invalid JSON on stdin:[/red] {exc}")
         raise typer.Exit(1)
 
-    finding_count = data.get("finding_count", 0)
-
-    if finding_count == 0 and not always:
+    if data.get("finding_count", 0) == 0 and not always:
         return
 
     try:
-        post(webhook_url, data)
+        post(resolved_url, data)
     except RuntimeError as exc:
         _err.print(f"[red]Slack notification failed:[/red] {exc}")
         raise typer.Exit(1)
