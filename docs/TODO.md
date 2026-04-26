@@ -54,7 +54,7 @@ All four initial rules are implemented and on main:
 ignis is a reactive tool — it analyzes event logs after a Spark job completes. The natural next step is making it run automatically as part of a larger workflow.
 
 - [x] **Orchestrator integration** — `examples/airflow/` DAG showing ignis as a post-Spark task, with branching on findings and a notification placeholder.
-- [ ] **Cloud event trigger** — support triggering ignis via S3/GCS/Azure Blob event notifications (e.g. Lambda, Cloud Function, Azure Function) so analysis runs automatically when a new event log appears in a bucket.
+- [x] **Cloud event trigger** — `examples/aws-lambda/` Lambda handler triggered by S3 ObjectCreated events; parses the log, runs all rules, and posts to Slack if findings are found.
 - [x] **Notification / routing layer** — `ignis notify slack <webhook-url>` reads findings JSON from stdin and posts a Slack Block Kit message; silent on clean runs, `--always` for confirmations.
 
 ---
