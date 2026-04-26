@@ -28,6 +28,7 @@ class Stage:
     stage_attempt_id: int
     name: str
     num_tasks: int = 0  # Configured partition count from Stage Info
+    parent_ids: list[int] = field(default_factory=list)
     tasks: list[Task] = field(default_factory=list)
 
     @property
@@ -41,3 +42,22 @@ class Application:
     app_name: str
     stages: dict[tuple[int, int], Stage] = field(default_factory=dict)
     executor_cores: int = 0  # Total cores across all executors
+
+    def parents_of(self, stage: Stage) -> list[Stage]:
+        """Return the most recent attempt of each parent stage."""
+        result = []
+        for parent_id in stage.parent_ids:
+            attempts = [s for s in self.stages.values() if s.stage_id == parent_id]
+            if attempts:
+                result.append(max(attempts, key=lambda s: s.stage_attempt_id))
+        return result
+
+    def children_of(self, stage: Stage) -> list[Stage]:
+        """Return stages that list this stage as a parent (most recent attempts only)."""
+        latest: dict[int, Stage] = {}
+        for s in self.stages.values():
+            if stage.stage_id in s.parent_ids:
+                prev = latest.get(s.stage_id)
+                if prev is None or s.stage_attempt_id > prev.stage_attempt_id:
+                    latest[s.stage_id] = s
+        return list(latest.values())

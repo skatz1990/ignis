@@ -60,6 +60,7 @@ def _dispatch(event: dict, app: Application) -> None:
             stage_attempt_id=key[1],
             name=info.get("Stage Name", ""),
             num_tasks=info.get("Number of Tasks", 0),
+            parent_ids=info.get("Parent IDs", []),
         )
 
     elif event_type == "SparkListenerExecutorAdded":
