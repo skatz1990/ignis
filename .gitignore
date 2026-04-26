@@ -32,5 +32,8 @@ htmlcov/
 *.log
 dev/output/
 
+# Local Airflow home (used for testing examples locally)
+.airflow/
+
 # Claude Code internal memory
 memory/
