@@ -3,9 +3,48 @@ SHUFFLE_JOB   := ignis-shuffle-job
 SPILL_JOB     := ignis-spill-job
 PARTITION_JOB := ignis-partition-job
 NS            := ignis-dev
-LOG_DIR     := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))/output
+LOG_DIR       := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))/output
+IMAGE         := ignis-spark-app
+SUBMIT        := /opt/spark/bin/spark-submit \
+                   --conf spark.eventLog.enabled=true \
+                   --conf spark.eventLog.dir=/mnt/spark-logs \
+                   --conf spark.eventLog.rolling.enabled=false
 
-.PHONY: apply fetch logs analyze clean run apply-shuffle fetch-shuffle run-shuffle apply-spill fetch-spill run-spill apply-partition fetch-partition run-partition
+.PHONY: apply fetch logs analyze clean run apply-shuffle fetch-shuffle run-shuffle apply-spill fetch-spill run-spill apply-partition fetch-partition run-partition \
+        docker-build docker-skew docker-shuffle docker-spill docker-partition
+
+# ── Docker targets (no kubectl needed) ───────────────────────────────────────
+
+docker-build:
+	docker build app/ -t $(IMAGE)
+
+docker-skew: docker-build
+	rm -rf $(LOG_DIR) && mkdir -p $(LOG_DIR)
+	docker run --rm --user root -v $(LOG_DIR):/mnt/spark-logs $(IMAGE) \
+	  $(SUBMIT) /app/skew_job.py
+	chmod -R a+r $(LOG_DIR)
+	$(MAKE) analyze
+
+docker-shuffle: docker-build
+	rm -rf $(LOG_DIR) && mkdir -p $(LOG_DIR)
+	docker run --rm --user root -v $(LOG_DIR):/mnt/spark-logs $(IMAGE) \
+	  $(SUBMIT) --driver-memory 4g /app/shuffle_job.py
+	chmod -R a+r $(LOG_DIR)
+	$(MAKE) analyze
+
+docker-spill: docker-build
+	rm -rf $(LOG_DIR) && mkdir -p $(LOG_DIR)
+	docker run --rm --user root -v $(LOG_DIR):/mnt/spark-logs $(IMAGE) \
+	  $(SUBMIT) --driver-memory 2g /app/spill_job.py
+	chmod -R a+r $(LOG_DIR)
+	$(MAKE) analyze
+
+docker-partition: docker-build
+	rm -rf $(LOG_DIR) && mkdir -p $(LOG_DIR)
+	docker run --rm --user root -v $(LOG_DIR):/mnt/spark-logs $(IMAGE) \
+	  $(SUBMIT) /app/partition_job.py
+	chmod -R a+r $(LOG_DIR)
+	$(MAKE) analyze
 
 # ── skew job ────────────────────────────────────────────────────────────────
 
@@ -27,7 +66,7 @@ logs:
 analyze:
 	@LOG=$$(ls -t $(LOG_DIR) | grep -v '\.inprogress' | grep -v 'eventlog_v2_' | head -1); \
 	echo "→ analyzing $(LOG_DIR)/$$LOG"; \
-	cd .. && .venv/bin/ignis analyze "$(LOG_DIR)/$$LOG"
+	cd .. && .venv/bin/ignis analyze "$(LOG_DIR)/$$LOG"; true
 
 clean:
 	kubectl delete job $(SKEW_JOB) -n $(NS) --ignore-not-found

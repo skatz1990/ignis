@@ -1,0 +1,26 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, sha2
+
+spark = (
+    SparkSession.builder.appName("ignis-shuffle-test")
+    .config("spark.sql.adaptive.enabled", "false")
+    .config("spark.sql.shuffle.partitions", "10")
+    .getOrCreate()
+)
+spark.sparkContext.setLogLevel("WARN")
+
+# write.parquet() forces Spark to materialize all columns through the shuffle.
+# 4M rows * ~324 bytes (key + 5 SHA-256 hashes, incompressible) ≈ 1.3 GB.
+n = 4_000_000
+df = spark.range(n).select(
+    (col("id") % 100).alias("key"),
+    sha2(col("id").cast("string"), 256).alias("h1"),
+    sha2((col("id") * 31).cast("string"), 256).alias("h2"),
+    sha2((col("id") * 37).cast("string"), 256).alias("h3"),
+    sha2((col("id") * 41).cast("string"), 256).alias("h4"),
+    sha2((col("id") * 43).cast("string"), 256).alias("h5"),
+)
+df.repartition(10, "key").write.mode("overwrite").parquet("/tmp/ignis_shuffle_test")
+print("write complete")
+
+spark.stop()
