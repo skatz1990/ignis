@@ -19,12 +19,12 @@ Requirements
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import BranchPythonOperator
-import json
 
 # ---------------------------------------------------------------------------
 # Configuration — adjust these for your environment
