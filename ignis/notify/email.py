@@ -94,6 +94,6 @@ def send(
         if server.has_extn("STARTTLS"):
             server.starttls(context=context)
             server.ehlo()
-        if username and password:
+        if username and password and server.has_extn("AUTH"):
             server.login(username, password)
         server.sendmail(sender, to, msg.as_string())
