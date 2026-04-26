@@ -68,11 +68,13 @@ ignis analyze abfs://my-container/spark-logs/application_1234_0001
 # Machine-readable JSON output — pipe to jq, store in CI artifacts
 ignis analyze s3://my-bucket/spark-logs/application_1234_0001 --output json
 
-# Pipe findings directly to a Slack channel
+# Pipe findings directly to a Slack channel (webhook URL from env var)
+export IGNIS_SLACK_WEBHOOK="https://hooks.slack.com/services/..."
 ignis analyze s3://my-bucket/spark-logs/application_1234_0001 --output json \
-  | ignis notify slack https://hooks.slack.com/services/...
+  | ignis notify slack
 
 # Send findings by email
+export IGNIS_SMTP_PASSWORD="pass"
 ignis analyze s3://my-bucket/spark-logs/application_1234_0001 --output json \
   | ignis notify email ops@example.com \
       --from ignis@example.com --smtp-host smtp.example.com
@@ -92,25 +94,24 @@ Spark event logs are standard NDJSON files (Spark 3.x) or zstd-compressed direct
 ### Slack
 
 ```bash
-ignis analyze /path/to/spark-event-log --output json \
-  | ignis notify slack https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+export IGNIS_SLACK_WEBHOOK="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+ignis analyze /path/to/spark-event-log --output json | ignis notify slack
 ```
 
-Create an incoming webhook at **api.slack.com/apps** → your app → Incoming Webhooks.
+The webhook URL can also be passed as a positional argument, but using the environment variable keeps it out of shell history and CI logs. Create an incoming webhook at **api.slack.com/apps** → your app → Incoming Webhooks.
 
 ### Email
 
 ```bash
+export IGNIS_SMTP_USERNAME="user"
+export IGNIS_SMTP_PASSWORD="pass"
 ignis analyze /path/to/spark-event-log --output json \
   | ignis notify email ops@example.com \
       --from ignis@example.com \
-      --smtp-host smtp.example.com \
-      --smtp-port 587 \
-      --username user \
-      --password pass
+      --smtp-host smtp.example.com
 ```
 
-Sends a plain-text + HTML multipart email via SMTP with STARTTLS. Port 25 skips TLS (useful for local relay). `--username` and `--password` are optional if your relay doesn't require authentication.
+Sends a plain-text + HTML multipart email via SMTP with STARTTLS. Credentials are read from `IGNIS_SMTP_USERNAME` / `IGNIS_SMTP_PASSWORD` environment variables (recommended) or passed via `--username` / `--password` flags. `--smtp-port` defaults to 587.
 
 ## Cloud storage
 
