@@ -62,4 +62,4 @@ ignis is a reactive tool — it analyzes event logs after a Spark job completes.
 ## Dev / Testing infrastructure
 
 - [x] Add real Spark 3.x event log fixture and compat tests — `spark35_compat.ndjson` generated from a real Spark 3.5.0 SparkPi job via Docker; 4 parser compat tests added.
-- [ ] Consider `pytest-snapshot` for reporter output to catch formatting regressions.
+- [ ] Consider `pytest-snapshot` for reporter output if the terminal reporter grows significantly more complex.
