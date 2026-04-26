@@ -91,7 +91,7 @@ def send(
     context = ssl.create_default_context()
     with smtplib.SMTP(smtp_host, smtp_port) as server:
         server.ehlo()
-        if smtp_port != 25:
+        if server.has_extn("STARTTLS"):
             server.starttls(context=context)
             server.ehlo()
         if username and password:
