@@ -141,6 +141,43 @@ def rules() -> None:
     console.print(table)
 
 
+@notify_app.command("email")
+def notify_email(
+    to: str = typer.Argument(..., help="Recipient email address."),
+    sender: str = typer.Option(..., "--from", help="Sender email address."),
+    smtp_host: str = typer.Option("localhost", "--smtp-host", help="SMTP server hostname."),
+    smtp_port: int = typer.Option(587, "--smtp-port", help="SMTP server port."),
+    username: str = typer.Option(None, "--username", help="SMTP username."),
+    password: str = typer.Option(None, "--password", help="SMTP password."),
+    always: bool = typer.Option(False, "--always", help="Send even when there are no findings."),
+) -> None:
+    """Read findings JSON from stdin and send a summary email via SMTP."""
+    from ignis.notify.email import send
+
+    try:
+        data = json.loads(sys.stdin.read())
+    except json.JSONDecodeError as exc:
+        _err.print(f"[red]Invalid JSON on stdin:[/red] {exc}")
+        raise typer.Exit(1)
+
+    if data.get("finding_count", 0) == 0 and not always:
+        return
+
+    try:
+        send(
+            data,
+            to=to,
+            sender=sender,
+            smtp_host=smtp_host,
+            smtp_port=smtp_port,
+            username=username,
+            password=password,
+        )
+    except Exception as exc:
+        _err.print(f"[red]Email notification failed:[/red] {exc}")
+        raise typer.Exit(1)
+
+
 @notify_app.command("slack")
 def notify_slack(
     webhook_url: str = typer.Argument(..., help="Slack incoming webhook URL."),

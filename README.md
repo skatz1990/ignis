@@ -68,6 +68,15 @@ ignis analyze abfs://my-container/spark-logs/application_1234_0001
 # Machine-readable JSON output — pipe to jq, store in CI artifacts
 ignis analyze s3://my-bucket/spark-logs/application_1234_0001 --output json
 
+# Pipe findings directly to a Slack channel
+ignis analyze s3://my-bucket/spark-logs/application_1234_0001 --output json \
+  | ignis notify slack https://hooks.slack.com/services/...
+
+# Send findings by email
+ignis analyze s3://my-bucket/spark-logs/application_1234_0001 --output json \
+  | ignis notify email ops@example.com \
+      --from ignis@example.com --smtp-host smtp.example.com
+
 # List all rules with their thresholds
 ignis rules
 ```
@@ -75,6 +84,33 @@ ignis rules
 Exits `0` if no issues are found, `1` if any are — in both terminal and JSON modes.
 
 Spark event logs are standard NDJSON files (Spark 3.x) or zstd-compressed directories (Spark 4.0+). Databricks writes them to DBFS, S3, GCS, or ADLS after each job.
+
+## Notifications
+
+`ignis notify` reads findings JSON from stdin and routes them to a notification channel. It is silent (exit 0, no message) when there are no findings. Pass `--always` to send a clean-run confirmation.
+
+### Slack
+
+```bash
+ignis analyze /path/to/spark-event-log --output json \
+  | ignis notify slack https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+```
+
+Create an incoming webhook at **api.slack.com/apps** → your app → Incoming Webhooks.
+
+### Email
+
+```bash
+ignis analyze /path/to/spark-event-log --output json \
+  | ignis notify email ops@example.com \
+      --from ignis@example.com \
+      --smtp-host smtp.example.com \
+      --smtp-port 587 \
+      --username user \
+      --password pass
+```
+
+Sends a plain-text + HTML multipart email via SMTP with STARTTLS. Port 25 skips TLS (useful for local relay). `--username` and `--password` are optional if your relay doesn't require authentication.
 
 ## Cloud storage
 
