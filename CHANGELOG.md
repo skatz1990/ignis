@@ -9,10 +9,19 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+---
+
+## [0.3.0] — 2026-04-25
+
 ### Added
 
 - **`ignis notify slack <webhook-url>`** — reads findings JSON from stdin and posts a formatted Block Kit message to a Slack webhook; silent no-op on clean runs, `--always` flag for clean-run confirmations
 - **`ignis notify email <to>`** — sends a plain-text + HTML multipart email via SMTP with STARTTLS; `--from`, `--smtp-host`, `--smtp-port`, `--username`, `--password` options
+- **Airflow example** — `examples/airflow/` DAG showing ignis as a post-Spark analysis step, with branching on findings and notification placeholder
+
+### Fixed
+
+- Email STARTTLS detection now uses `server.has_extn("STARTTLS")` instead of inferring from port number, fixing compatibility with local SMTP relays
 
 ---
 
