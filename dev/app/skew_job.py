@@ -20,8 +20,8 @@ df = spark.range(n).select(
     col("id").alias("value"),
 )
 
-df.repartition(10, "key") \
-    .withColumn("hash", sha2(col("value").cast("string"), 256)) \
-    .write.mode("overwrite").parquet("/tmp/ignis_skew_result")
+df.repartition(10, "key").withColumn("hash", sha2(col("value").cast("string"), 256)).write.mode(
+    "overwrite"
+).parquet("/tmp/ignis_skew_result")
 
 spark.stop()
