@@ -61,7 +61,9 @@ def spark_event_log(request, tmp_path_factory):
         # Disable rolling format (Spark 4.x default) so we always get a single file
         "--conf spark.eventLog.rolling.enabled=false "
         "--class org.apache.spark.examples.SparkPi "
-        "$JAR 10",
+        # Make logs world-readable before container exits; running as root inside
+        # the container means files land as root:root on the host mount.
+        "$JAR 10 && chmod -R a+r /tmp/spark-logs",
     ]
 
     result = subprocess.run(cmd, capture_output=True, timeout=180)
